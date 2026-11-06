@@ -3,7 +3,8 @@
 // that isn't intl's. It sits at the top of this repo, beside the root mise.toml whose tasks run it, in a file for each
 // thing it does:
 //
-//   - e2e_walk_test.go, this file: TestWalk, the test the root's tasks run (which repo, REPO_PATH), and TestSteps.
+//   - e2e_walk_test.go, this file: the walk tests the root's tasks run by name (TestWalkTemplate, TestWalkNewRepo),
+//     and TestSteps.
 //   - e2e_steps_test.go: the steps, the repo's numbered tasks in their order, each with its check.
 //   - e2e_mise_test.go: the repo, and what's intl's in making one: a new repo (mise-intl init, then intl:template), and
 //     the calls the steps make.
@@ -23,13 +24,24 @@ import (
 )
 
 // intlWalk is the walk: the template's numbered tasks (templates/.mise/tasks/mise-intl.toml), in their order, each
-// checked. The root's tasks say which repo: the template where it is (REPO_PATH=templates), or a new repo made the
-// README's way (E2E_STAMPED=true, at the release -version names or this checkout's build).
+// checked. Which repo is the test's name: the template where it is, or a new repo made the README's way (at the
+// release -version names or this checkout's build).
 var intlWalk = walk.Walk[*walker]{Steps: steps, New: newRepo, Prepare: prepare, Of: walkOf}
 
-// TestWalk walks the repo the root's task names (mise run template:e2e is REPO_PATH=templates). Without REPO_PATH it
-// skips, so go test ./... never walks.
-func TestWalk(t *testing.T) { intlWalk.Run(t) }
+// TestWalkTemplate walks the template, templates/, where it is (mise run template:e2e). Each walk runs only when its
+// task names it, so go test ./... never walks.
+func TestWalkTemplate(t *testing.T) { intlWalk.Template(t, "templates") }
+
+// TestWalkNewRepo walks a new repo made the README's way, the steps that change the catalogs too (mise run
+// new-repo:e2e).
+func TestWalkNewRepo(t *testing.T) {
+	walk.OnlyByName(t)
+	walkNew = true
+	intlWalk.NewRepo(t)
+}
+
+// walkNew is whether the walk is on a new repo, which the steps that change the catalogs run on too.
+var walkNew bool
 
 // TestSteps checks that the steps are the template's numbered tasks, in their order, so the walk is that file's walk.
 func TestSteps(t *testing.T) {
@@ -63,9 +75,9 @@ type walker struct {
 // newOnly is why a step that changes the catalogs doesn't run on the template where it is.
 const newOnly = "it changes the catalogs, so the walk runs it on a new repo (mise run new-repo:e2e), not on the template"
 
-// walkOf is the walk of a repo walk.Run has set up (mise install, then its setup task): first, what it runs.
+// walkOf is the walk of a repo the walk has set up (mise install, then its setup task): first, what it runs.
 func walkOf(r walk.Repo) *walker {
-	w := &walker{repo: repo{Repo: r}, inPlace: os.Getenv("E2E_STAMPED") != "true"}
+	w := &walker{repo: repo{Repo: r}, inPlace: !walkNew}
 	w.Pass("%s runs %s", w.Name, w.versions())
 	return w
 }
