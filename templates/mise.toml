@@ -1,5 +1,5 @@
 # A Go app's own tools: workerd, which intl's Intl runs on outside a Worker, from package.json, as mise-cloudflare's
-# template gets wrangler (mise run setup installs it, and the Go modules the app imports). mise-intl itself is
+# template gets wrangler (mise run setup installs it, and the modules go.mod pins). mise-intl itself is
 # .mise/config.toml's pin, with the Go its tasks run with (go.mod's); its tasks are .mise/tasks/mise-intl.toml: mise-intl
 # init writes them (then mise run intl shows the way).
 
@@ -16,8 +16,8 @@ aube = { version = "2.8.4", workflow = ["release-plz.yml@refs/heads/main", "rele
 _.path = ["{{config_root}}/node_modules/.bin"]
 
 [tasks.setup]
-description = "Install the pinned workerd (package.json), and the Go modules the app imports, intl's among them (go mod tidy)"
-run = "aube install && go mod tidy"
+description = "Install the pinned workerd (package.json), and download the modules go.mod pins, intl's among them"
+run = "aube install && go mod download"
 
 [tasks.serve]
 description = "Run the app: http://localhost:8080 (ADDR to change it)"

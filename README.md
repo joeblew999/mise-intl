@@ -51,7 +51,7 @@ that's new or has a Go app of its own:
 
    It writes the template's little app: one page of intl's formats in plain Go (`app/`), in English and German, its
    `go.mod` named for the repo's folder, the `mise.toml` and `package.json` that install workerd (node, aube, `mise
-   run setup`), and a README, and installs it. It never writes over a file: a repo with an app of its own gets none of
+   run setup`), and a README, and installs it (`mise run setup`, then `go mod tidy`). It never writes over a file: a repo with an app of its own gets none of
    it, and adds workerd its own way (`aube add -D workerd@1.20261104.1`, with node and aube in its `mise.toml`, as the
    template's).
 4. **Then:**

@@ -140,8 +140,9 @@ func npmName(folder string) string {
 }
 
 // setUpApp installs what the template's app runs on, as mise-cloudflare's template installs its Worker's: mise trusts
-// the mise.toml template wrote, then the repo's own setup task installs package.json's workerd and the Go modules the
-// app imports (mise installs Go, node and aube for it first). Without a setup task, it says how instead.
+// the mise.toml template wrote, then the repo's own setup task installs package.json's workerd (mise installs Go, node
+// and aube for it first), then go mod tidy puts the app's imports in go.mod and go.sum. Without a setup task, it says
+// how instead.
 func setUpApp(root string) {
 	trustConfig(root, "mise.toml")
 	has := exec.Command("mise", "tasks", "info", "setup")
@@ -155,5 +156,12 @@ func setUpApp(root string) {
 	cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = root, os.Stdin, os.Stdout, os.Stderr
 	if err := cmd.Run(); err != nil {
 		fail(fmt.Errorf("mise run setup: %w", err))
+	}
+	// The app's imports in its go.mod and go.sum, intl's packages among them: the app is new, so they're the template's.
+	fmt.Println("$ go mod tidy")
+	tidy := goCommand(root, "mod", "tidy")
+	tidy.Stdout, tidy.Stderr = os.Stdout, os.Stderr
+	if err := tidy.Run(); err != nil {
+		fail(fmt.Errorf("go mod tidy: %w", err))
 	}
 }
