@@ -1,0 +1,14 @@
+# de: the translations of en.toml, same tables and keys. go tool intl todo lists what is left.
+
+[home]
+title = "intl, in Ihrer Sprache"
+intro = "Jedes Datum, jede Zahl und jeder Name unten schreibt das Intl der Laufzeit selbst, in Ihrer Sprache."
+languages = "{n, plural, one {Diese Seite gibt es in # Sprache.} other {Diese Seite gibt es in # Sprachen.}}"
+read = "Lesen auf"
+
+[home.row]
+date = "Ein Datum"
+price = "Ein Preis"
+list = "Eine Liste"
+ago = "Vor einiger Zeit"
+region = "Der Name einer Region"

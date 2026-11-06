@@ -9,9 +9,7 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
-	intlmise "github.com/joeblew999/mise-intl/internal/mise"
 	"github.com/joeblew999/mise-intl/internal/setup"
-	"github.com/joeblew999/mise-intl/intl/workerd"
 )
 
 func app(t *testing.T, files map[string]string) string {
@@ -82,16 +80,35 @@ func TestInitFresh(t *testing.T) {
 	if s := read(t, root, ".gitignore"); !strings.Contains(s, "\nintl_gen.go\nintl_messages_gen.go\nintl-messages.mjs\n") {
 		t.Errorf(".gitignore:\n%s", s)
 	}
-	// No workerd pin: intl fetches the workerd it pins itself (intl/workerd.Path), so an app needs only its module.
-	if s := read(t, root, "mise.toml"); strings.Contains(s, "workerd") || !strings.Contains(s, `idiomatic_version_file_enable_tools = ["go"]`) {
-		t.Errorf("mise.toml:\n%s", s)
+	// No mise.toml: Go's version comes from the template's .mise/config.toml, which go tool intl init writes, and
+	// intl fetches the workerd it pins itself (intl/workerd.Path), so an app needs only its module.
+	if _, err := os.Stat(filepath.Join(root, "mise.toml")); err == nil {
+		t.Errorf("init wrote mise.toml:\n%s", read(t, root, "mise.toml"))
 	}
 }
 
-// TestWorkerdPins: intl's mise tasks pin the workerd init pins.
-func TestWorkerdPins(t *testing.T) {
-	if n := strings.Count(string(intlmise.Tasks), `workerd = "`+workerd.Version+`"`); n == 0 || n != strings.Count(string(intlmise.Tasks), "workerd = ") {
-		t.Errorf("mise/tasks.toml pins workerd other than %s", workerd.Version)
+// TestInitWithoutGsx: an app without gsx (no gsxui, no gsx.toml, no .gsx files) gets nothing of gsx's, even when its
+// go.mod requires gsx for something else.
+func TestInitWithoutGsx(t *testing.T) {
+	root := app(t, map[string]string{"main.go": "package main\n"})
+	if err := os.WriteFile(filepath.Join(root, "go.mod"), []byte("module example.com/shop\n\nrequire github.com/gsxhq/gsx v0.5.0\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := setup.Init(root, setup.Options{Locales: []string{"en"}, Catalogs: "locales"}, io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "gsx.toml")); err == nil {
+		t.Errorf("init wrote gsx.toml into an app without gsx:\n%s", read(t, root, "gsx.toml"))
+	}
+	if s := read(t, root, "intl.toml"); !strings.Contains(s, `locales = ["en"]`) {
+		t.Errorf("intl.toml:\n%s", s)
+	}
+	// A .gsx file of its own makes it a gsx app.
+	if err := os.WriteFile(filepath.Join(root, "page.gsx"), []byte("package main\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if !setup.UsesGsx(root, "") {
+		t.Error("an app with a .gsx file isn't a gsx app")
 	}
 }
 

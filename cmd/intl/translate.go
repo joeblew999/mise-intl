@@ -11,21 +11,19 @@ import (
 	"time"
 
 	"github.com/joeblew999/mise-intl/internal/catalog"
-	"github.com/joeblew999/mise-intl/intl/config"
 )
 
 // translate is go tool intl translate [locale…]: Claude Code translates what is missing or stale with the
 // intl skill, one worker per language at once (intl.toml [translate] workers, default 6) on [translate]
 // model. Each worker edits only its own catalog and checks it with go tool intl check <locale>, which writes nothing;
 // then gen and the full check run once.
-func translate(c config.Config, ids []string) int {
+func translate(ids []string) {
+	c := app()
 	claude, err := exec.LookPath("claude")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "✗ go tool intl translate runs Claude Code (https://code.claude.com): install it, or translate by hand (go tool intl todo)")
-		return 1
+		os.Exit(1)
 	}
-	_, err = writeSkill(c.Root)
-	check(err)
 	p := read(c)
 	var work []*catalog.Locale
 	for _, l := range pick(p, ids) {
@@ -35,7 +33,7 @@ func translate(c config.Config, ids []string) int {
 	}
 	if len(work) == 0 {
 		fmt.Println("nothing to translate")
-		return 0
+		return
 	}
 	n := c.Translate.Workers
 	if n <= 0 {
@@ -83,8 +81,8 @@ func translate(c config.Config, ids []string) int {
 		}(l, len(l.Todo(p)))
 	}
 	wg.Wait()
-	check(read(c).Generate(os.Stderr))
-	return checkAll(c, false)
+	must(read(c).Generate(os.Stderr))
+	os.Exit(checkAll(c, false))
 }
 
 // locked runs f holding a lock file beside path, so concurrent go tool intl processes (translate's workers

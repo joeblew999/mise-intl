@@ -7,14 +7,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
 
 	"github.com/BurntSushi/toml"
-
 	"github.com/joeblew999/mise-intl/internal/catalog"
 )
 
@@ -33,8 +34,8 @@ const (
 // Init writes intl.toml, the catalogs, gsx.toml's filters and renderers, and .gitignore's generated files into the
 // app at root, logging each change.
 func Init(root string, o Options, log io.Writer) error {
-	if _, err := os.Stat(filepath.Join(root, "go.mod")); err != nil {
-		return errors.New("intl init: run it where the app's go.mod is")
+	if GoMod(root) == "" {
+		return errors.New("intl init: run it in a Go module, where the app's go.mod is (go mod init <module> first)")
 	}
 	if len(o.Locales) == 0 || o.Catalogs == "" {
 		return errors.New("intl init: locales and catalogs are required")
@@ -89,21 +90,65 @@ func Init(root string, o Options, log io.Writer) error {
 		}
 	}
 
-	renderers := [][2]string{
-		{intlPkg + ".Msg", intlPkg + ".Translate"},
-		{intlPkg + ".Value", gsxintlPkg + ".Render"},
-		{intlPkg + ".Plain", intlPkg + ".PlainText"},
+	// A gsx app gets gsx.toml's filters and renderers (gsxintl); an app without gsx gets nothing of gsx's.
+	if UsesGsx(root, o.Gsxui) {
+		renderers := [][2]string{
+			{intlPkg + ".Msg", intlPkg + ".Translate"},
+			{intlPkg + ".Value", gsxintlPkg + ".Render"},
+			{intlPkg + ".Plain", intlPkg + ".PlainText"},
+		}
+		if err := gsxToml(filepath.Join(root, "gsx.toml"), renderers, log); err != nil {
+			return err
+		}
+		if err := GsxuiRenderer(root, o.Gsxui, log); err != nil {
+			return err
+		}
 	}
-	if err := gsxToml(filepath.Join(root, "gsx.toml"), renderers, log); err != nil {
-		return err
+	return gitignore(filepath.Join(root, ".gitignore"), log)
+}
+
+// UsesGsx reports whether the app at root is a gsx app: it has gsxui (gsxui), a gsx.toml, or .gsx files of its own.
+// Its go.mod isn't the sign: the module an app is a folder of may require gsx for packages of its own (the template,
+// where it is, is a folder of mise-intl's, which gsxintl needs gsx for).
+func UsesGsx(root, gsxui string) bool {
+	if gsxui != "" {
+		return true
 	}
-	if err := GsxuiRenderer(root, o.Gsxui, log); err != nil {
-		return err
+	if _, err := os.Stat(filepath.Join(root, "gsx.toml")); err == nil {
+		return true
 	}
-	if err := gitignore(filepath.Join(root, ".gitignore"), log); err != nil {
-		return err
+	found := errors.New("found")
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() && path != root {
+			if strings.HasPrefix(d.Name(), ".") || d.Name() == "node_modules" || d.Name() == "testdata" {
+				return filepath.SkipDir
+			}
+			if _, err := os.Stat(filepath.Join(path, "go.mod")); err == nil {
+				return filepath.SkipDir // a module of its own
+			}
+		}
+		if !d.IsDir() && strings.HasSuffix(d.Name(), ".gsx") {
+			return found
+		}
+		return nil
+	})
+	return err == found
+}
+
+// GoMod is the go.mod of the module root is in, as go reads it: the app's own, or for the template where it is,
+// mise-intl's. "" when root is in none.
+func GoMod(root string) string {
+	cmd := exec.Command("go", "env", "GOMOD")
+	cmd.Dir = root
+	out, err := cmd.Output()
+	p := strings.TrimSpace(string(out))
+	if err != nil || p == "" || p == os.DevNull {
+		return ""
 	}
-	return miseTools(filepath.Join(root, "mise.toml"), log)
+	return p
 }
 
 // DetectGsxui is where gsxui vendors components in the app at root (gsxui.json's ui), "" without gsxui.
@@ -210,27 +255,6 @@ func GsxuiRenderer(root, gsxui string, log io.Writer) error {
 	return gsxToml(filepath.Join(root, "gsx.toml"), [][2]string{{pkg + ".T", pkg + ".Translate"}}, log)
 }
 
-
-// miseTools pins workerd in mise.toml's [tools]: outside a Worker, the app, go test and the tooling run Intl on it
-// (intl/workerd).
-func miseTools(path string, log io.Writer) error {
-	b, err := os.ReadFile(path)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return err
-	}
-	s := string(b)
-	before := s
-	// Go itself from go.mod's toolchain line (mise: idiomatic version files).
-	if !strings.Contains(s, "idiomatic_version_file_enable_tools") {
-		s = addToTable(s, "settings", "# Go comes from go.mod's toolchain line.\nidiomatic_version_file_enable_tools = [\"go\"]\n")
-		fmt.Fprintln(log, "updated mise.toml: Go from go.mod")
-	}
-	if s == before {
-		return nil
-	}
-	return os.WriteFile(path, []byte(s), 0o644)
-}
-
 var (
 	filterLine = regexp.MustCompile(`(?m)^filter_packages\s*=\s*\[`)
 	tableLine  = regexp.MustCompile(`(?m)^\[`)
@@ -252,7 +276,7 @@ func gsxToml(path string, renderers [][2]string, log io.Writer) error {
 		return err
 	}
 	s, before := string(b), string(b)
-	filters := intlPkg + "/filters"
+	filters := gsxintlPkg + "/filters"
 	if !strings.Contains(s, `"`+filters+`"`) {
 		line := "# intl's gsx filters: { t |> date(opts) }, { n |> number }, href={ \"/about\" |> localize } (intl/README.md).\n"
 		if loc := filterLine.FindStringIndex(s); loc != nil {

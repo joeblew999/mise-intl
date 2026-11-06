@@ -1,0 +1,10 @@
+# The app's languages (github.com/joeblew999/mise-intl/intl): BCP 47 ids, the source first.
+locales = ["en", "de"]
+# <locale>.toml per language, ICU MessageFormat; go tool intl gen writes the Go package of messages there.
+catalogs = "locales"
+# Optional: a README badge go tool intl gen keeps current, "languages | 2, all translated".
+# badge = "docs/badges/intl.svg"
+
+# Guidance for whoever translates, people or Claude (go tool intl todo shows it); "*" is for every language.
+[notes]
+"*" = ""

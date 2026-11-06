@@ -12,8 +12,8 @@ import (
 	"strings"
 
 	"github.com/joeblew999/mise-intl/internal/catalog"
-	"github.com/joeblew999/mise-intl/intl/config"
 	"github.com/joeblew999/mise-intl/internal/setup"
+	"github.com/joeblew999/mise-intl/intl/config"
 )
 
 // Options are where add writes and how.

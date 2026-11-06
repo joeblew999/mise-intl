@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/joeblew999/mise-intl/intl"
 	"github.com/joeblew999/mise-intl/gsxintl/filters"
+	"github.com/joeblew999/mise-intl/intl"
 	"github.com/joeblew999/mise-intl/intl/intltest"
 )
 

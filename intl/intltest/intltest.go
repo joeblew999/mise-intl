@@ -17,8 +17,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/joeblew999/mise-intl/intl"
 	"github.com/joeblew999/mise-intl/internal/catalog"
+	"github.com/joeblew999/mise-intl/intl"
 	"github.com/joeblew999/mise-intl/intl/config"
 	"github.com/joeblew999/mise-intl/intl/workerd"
 )

@@ -28,8 +28,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/joeblew999/mise-intl/intl"
 	intljs "github.com/joeblew999/mise-intl/internal/js"
+	"github.com/joeblew999/mise-intl/intl"
 )
 
 // CompatibilityDate is the Workers compatibility date the Intl Worker runs on.

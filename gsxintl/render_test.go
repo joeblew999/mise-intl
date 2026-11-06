@@ -57,4 +57,3 @@ func TestValue(t *testing.T) {
 		t.Errorf("ar facts: %q %q %q", ar.Dir(), ar.Name(), ar.Maximal())
 	}
 }
-

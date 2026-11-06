@@ -12,6 +12,7 @@ require (
 require (
 	github.com/editorconfig/editorconfig-core-go/v2 v2.6.4 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
+	github.com/joeblew999/mise-check v0.4.0 // indirect
 	github.com/tdewolff/minify/v2 v2.24.13 // indirect
 	github.com/tdewolff/parse/v2 v2.8.13 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20260611194520-c48552f49976 // indirect
@@ -24,4 +25,7 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
 
-tool github.com/gsxhq/gsx/cmd/gsx
+tool (
+	github.com/gsxhq/gsx/cmd/gsx
+	github.com/joeblew999/mise-intl/cmd/intl
+)

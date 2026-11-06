@@ -1,0 +1,20 @@
+# The source catalog: every message the app shows, in ICU MessageFormat. Translations are <locale>.toml beside it,
+# with the same tables and keys. A comment above a key or a table tells translators where the text appears.
+
+[home]
+# The page's title and its heading.
+title = "intl, in your language"
+# Under the heading: what the page shows.
+intro = "Every date, number and name below is written by the runtime's own Intl, in your language."
+# How many languages the page is in: n is that number.
+languages = "{n, plural, one {This page is in # language.} other {This page is in # languages.}}"
+# The heading of the links to the page in each language.
+read = "Read it in"
+
+[home.row]
+# Each row of the table: what its value is.
+date = "A date"
+price = "A price"
+list = "A list"
+ago = "Some time ago"
+region = "A region's name"

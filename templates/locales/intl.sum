@@ -1,0 +1,10 @@
+# intl.sum: the source text each translation was made from (go tool intl gen writes it: commit it, don't edit it).
+de home.intro d9595c0d69ef 62e425851a8f
+de home.languages 68c2743b0f3e d340faff4924
+de home.read f5dc73dfa860 4a798700341e
+de home.row.ago 7c43ec570b80 3fa6ce4a97e9
+de home.row.date b6d843db9d54 ae22b69794a8
+de home.row.list 9cea8fcdea77 f240aa0f8795
+de home.row.price 577cec3fe802 60c567154183
+de home.row.region f418264b8006 8ebcec71df21
+de home.title f935abfce7de 3d08c5482cb9

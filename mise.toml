@@ -1,0 +1,50 @@
+# mise-intl's own tasks, only for working on mise-intl itself: run them here, at the top. A repo that uses intl never
+# gets this file, nor needs mise at all: it gets intl from this Go module (go get -tool …/cmd/intl), and go tool intl
+# init writes the template's tool files into it, templates/'s. Each task is named for what it acts on (noun:verb):
+#   template: the template, templates/, a whole repo that runs where it is
+#     mise run template:gen          its messages package, which the module's own build and tests need (gen there)
+#     mise run template:e2e          TestWalk on it: its numbered tasks in their order, through its own mise file, each checked
+#     mise run template:check-mise   misecheck on its tasks file against go tool intl's Go, and against the walk
+#   new-repo: a new repo, made from nothing as docs/intl/README.md says, by the walk and gone after it
+#     mise run new-repo:e2e          TestWalk on it, made at this checkout, or at the release --version names
+#   tool: intl itself, its packages and its command
+#     mise run tool:test             go vet, and every Go test but the walk's
+#   root: this file
+#     mise run root:check-mise       misecheck on this very file
+
+[settings]
+# go.mod's toolchain line is the Go pin; this makes mise install honour it.
+idiomatic_version_file_enable_tools = ["go"]
+
+[tasks."template:gen"]
+description = "The template's messages package (templates/locales/intl_gen.go), which go vet and go test of this module need: go tool intl gen, in the template"
+dir = "{{config_root}}/templates"
+run = "go tool intl gen"
+
+[tasks."template:e2e"]
+description = "TestWalk on the template, templates/, where it is: its numbered tasks (intl:03-init to 14-prune) in their order, through its own mise file, each checked by what a person would see it do (walk_test.go); the ones that change the catalogs run on a new repo"
+depends = ["template:gen"]
+env = { REPO_PATH = "templates" }
+run = 'go test . -run "^TestWalk$" -count=1 -v -timeout 15m'
+
+[tasks."template:check-mise"]
+description = "misecheck on the template's tasks file, both ways: against go tool intl's Go (each task's command is its file, each command file is a task's, each flag on both sides) and against the walk that runs them"
+env = { MISE_FILE = "templates/.mise/tasks/intl.toml", GO_CMD = "cmd", GO_LAYOUT = "file", GO_CALLERS = "." }
+run = 'go test . -run "^TestMise$" -count=1 -v'
+
+[tasks."new-repo:e2e"]
+description = "TestWalk on a new repo, made from nothing as docs/intl/README.md says (an empty folder with its own git, go mod init, intl's tool line, go tool intl init, intl:template), at this checkout or at the release --version names; every numbered task, the ones that change the catalogs too; gone after it"
+usage = 'flag "--version <version>" help="the release to make it at, v0.1.0 (default this checkout)"'
+depends = ["template:gen"]
+env = { REPO_PATH = "templates", E2E_STAMPED = "true" }
+run = 'go test . -run "^TestWalk$" -count=1 -v -timeout 15m{% if usage.version %} -args -version "{{usage.version}}"{% endif %}'
+
+[tasks."tool:test"]
+description = "go vet, and every Go test, run for real (no cached results): the walk's skip without REPO_PATH, so they need nothing; Intl comes from the workerd intl fetches"
+depends = ["template:gen"]
+run = 'go vet ./... && go test -count=1 ./...'
+
+[tasks."root:check-mise"]
+description = "misecheck on this very file: each task one line, its Go there, its usage passed by name, no POSIX shell syntax"
+env = { MISE_FILE = "mise.toml" }
+run = 'go test . -run "^TestMise$" -count=1 -v'

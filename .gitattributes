@@ -1,0 +1,2 @@
+# Every text file with \n line endings in every checkout (git on Windows would give \r\n).
+* text=auto eol=lf
