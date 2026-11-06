@@ -4,25 +4,23 @@ package e2e
 
 import (
 	"cmp"
-	"io"
-	"net"
-	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/joeblew999/mise-check/walk"
 )
 
-// steps are the template's numbered tasks, each checked. TestSteps fails unless they're exactly those, in their order.
+// steps are the repo's numbered tasks (its .mise/tasks/mise-intl.toml, which is the template's,
+// templates/.mise/tasks/mise-intl.toml), in their order, each with its check: how the walk runs it and checks it did
+// what it says, as a person would see it. TestSteps fails unless they're exactly the template's numbered tasks, in
+// their order.
 var steps = []walk.Step[*walker]{
 	{Task: "intl:03-init", Check: func(w *walker) {
-		before := w.Snapshot("node_modules")
+		before := w.Snapshot(local...)
 		w.MustTask("intl:03-init")
-		if changed := walk.Diff(before, w.Snapshot("node_modules")); len(changed) > 0 {
+		if changed := walk.Diff(before, w.Snapshot(local...)); len(changed) > 0 {
 			w.T.Fatalf("intl:03-init changed %s: the repo isn't what init writes", strings.Join(changed, ", "))
 		}
 		w.Pass("intl:03-init changed nothing: the repo is what init writes")
@@ -32,8 +30,12 @@ var steps = []walk.Step[*walker]{
 			w.T.Fatalf("intl:04-check: %s", out)
 		}
 		w.Pass("intl:04-check: no problem")
+		// As on GitHub, from a fresh checkout: nothing installed, so verify's own setup has to install workerd.
+		if err := os.RemoveAll(filepath.Join(w.Dir, "node_modules")); err != nil {
+			w.T.Fatal(err)
+		}
 		w.MustTask("intl:verify")
-		w.Pass("intl:verify: what the repo's GitHub workflow runs passes (the app's test task, then check)")
+		w.Pass("intl:verify: what the repo's GitHub workflow runs passes, from nothing installed, as a fresh checkout is (its setup and test tasks, then check)")
 	}},
 	{Task: "intl:05-show", Check: func(w *walker) {
 		var s struct {
@@ -61,7 +63,7 @@ var steps = []walk.Step[*walker]{
 			"/":    {`lang="en"`, "July 4, 2026", "€1,234.50", "Go, mise, and intl", "Japan", "This page is in 2 languages."},
 			"/de/": {`lang="de"`, "4. Juli 2026", "1.234,50\u00a0€", "Go, mise und intl", "vor 3 Tagen", "Diese Seite gibt es in 2 Sprachen."},
 		} {
-			body := w.serve(path)
+			body := w.miseServe(path)
 			for _, s := range want {
 				if !strings.Contains(body, s) {
 					w.T.Fatalf("the app at %s has no %q:\n%s", path, s, body)
@@ -196,35 +198,4 @@ var steps = []walk.Step[*walker]{
 		w.MustTask("intl:04-check")
 		w.Pass("intl:14-prune: gone.old, which English no longer has, removed from de.toml; intl:04-check passes")
 	}},
-}
-
-// serve runs the app as a person does (mise run serve, its own task) on a free port, and returns its page at path.
-func (w *walker) serve(path string) string {
-	w.T.Helper()
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		w.T.Fatal(err)
-	}
-	addr := l.Addr().String()
-	l.Close()
-	cmd := exec.Command("mise", "run", "serve")
-	cmd.Dir, cmd.Env = w.Dir, w.Env("ADDR="+addr)
-	walk.OwnGroup(cmd)
-	var logs strings.Builder
-	cmd.Stdout, cmd.Stderr = &logs, &logs
-	if err := cmd.Start(); err != nil {
-		w.T.Fatal(err)
-	}
-	defer walk.KillGroup(cmd)
-	for deadline := time.Now().Add(2 * time.Minute); time.Now().Before(deadline); time.Sleep(250 * time.Millisecond) {
-		resp, err := http.Get("http://" + addr + path)
-		if err != nil {
-			continue
-		}
-		b, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		return string(b)
-	}
-	w.T.Fatalf("the app (mise run serve) never answered on %s:\n%s", addr, logs.String())
-	return ""
 }
