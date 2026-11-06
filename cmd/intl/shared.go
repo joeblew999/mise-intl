@@ -54,7 +54,7 @@ func pick(p *catalog.Project, ids []string) []*catalog.Locale {
 func startIntl() func() {
 	stop, err := intltest.StartIntl()
 	if err != nil {
-		fail(fmt.Errorf("intl: Intl needs workerd (mise installs it): %w", err))
+		fail(fmt.Errorf("intl: Intl needs workerd (mise run setup installs it from package.json): %w", err))
 	}
 	return stop
 }

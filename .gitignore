@@ -2,3 +2,5 @@
 *.test
 *.out
 .DS_Store
+# aube install (package.json: workerd)
+node_modules/

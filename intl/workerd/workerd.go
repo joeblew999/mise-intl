@@ -11,10 +11,11 @@
 //	}
 //	defer stop()
 //
-// workerd comes from mise, as every tool of the repo's does: the repo's mise.toml pins it at Version (the template's
-// app's does, go tool intl template), and mise puts it on the PATH of every task and mise exec (Path). INTL_WORKERD names a
-// workerd of your own instead (a server's image built without mise). Each Intl call is a request to it on 127.0.0.1,
-// about 0.1 ms. It ends with the process that started it, however that process ends (launch).
+// workerd comes from npm, as mise-cloudflare's template gets wrangler: the repo's package.json pins it at Version (the
+// template's app's does, go tool intl template), aube installs it (mise run setup), and intl runs the native workerd
+// of the node_modules nearest the working directory, or of the one whose .bin is on the PATH (Path). INTL_WORKERD names
+// a workerd of your own instead (a server's image built without node_modules). Each Intl call is a request to it on
+// 127.0.0.1, about 0.1 ms. It ends with the process that started it, however that process ends (launch).
 package workerd
 
 import (
@@ -28,6 +29,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -38,25 +40,78 @@ import (
 // CompatibilityDate is the Workers compatibility date the Intl Worker runs on.
 const CompatibilityDate = "2026-09-11"
 
-// Version is the workerd release intl is tested with: the template's mise.toml pins it, and this repo's own mise.toml
-// pins it too (TestWorkerdPins).
+// Version is the workerd release intl is tested with: the template's package.json pins it (TestWorkerdPins).
 const Version = "1.20261104.1"
 
-// Path is the workerd intl runs: INTL_WORKERD when it names one, or else the workerd on the PATH, which mise puts there
-// at the version the repo's mise.toml pins.
+// Path is the workerd intl runs: INTL_WORKERD when it names one; else the native workerd of npm's workerd package in
+// the node_modules nearest the working directory (the repo's, where aube installs package.json's), or in the
+// node_modules whose .bin has the workerd on the PATH (mise's [env] puts it there); else the workerd on the PATH.
 func Path() (string, error) {
 	if p := os.Getenv("INTL_WORKERD"); p != "" {
 		return p, nil
+	}
+	if wd, err := os.Getwd(); err == nil {
+		for dir := wd; ; dir = filepath.Dir(dir) {
+			if p, ok := native(filepath.Join(dir, "node_modules")); ok {
+				return p, nil
+			}
+			if filepath.Dir(dir) == dir {
+				break
+			}
+		}
 	}
 	p, err := exec.LookPath("workerd")
 	if err != nil {
 		return "", errors.New(noWorkerd)
 	}
+	if bin := filepath.Dir(p); filepath.Base(bin) == ".bin" {
+		if n, ok := native(filepath.Dir(bin)); ok {
+			return n, nil
+		}
+	}
 	return p, nil
 }
 
+// native is the workerd binary of npm's workerd package in node_modules: its platform's package beside it
+// (@cloudflare/workerd-darwin-arm64, …), where npm, pnpm and aube put it, or the package's own bin/workerd, which its
+// install script makes the binary itself outside Windows.
+func native(nodeModules string) (string, bool) {
+	pkg, err := filepath.EvalSymlinks(filepath.Join(nodeModules, "workerd"))
+	if err != nil {
+		return "", false
+	}
+	arch := map[string]string{"amd64": "64", "arm64": "arm64"}[runtime.GOARCH]
+	exe := map[bool]string{true: ".exe"}[runtime.GOOS == "windows"]
+	platform := filepath.Join("@cloudflare", "workerd-"+runtime.GOOS+"-"+arch, "bin", "workerd"+exe)
+	for _, p := range []string{
+		filepath.Join(filepath.Dir(pkg), platform),
+		filepath.Join(nodeModules, platform),
+		filepath.Join(nodeModules, ".aube", "node_modules", platform),
+	} {
+		if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
+			return p, true
+		}
+	}
+	if p := filepath.Join(pkg, "bin", "workerd"); runtime.GOOS != "windows" && isBinary(p) {
+		return p, true
+	}
+	return "", false
+}
+
+// isBinary reports whether the file at p is a program of its own, not a script (a #! line).
+func isBinary(p string) bool {
+	f, err := os.Open(p)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	head := make([]byte, 2)
+	n, _ := io.ReadFull(f, head)
+	return n == 2 && string(head) != "#!"
+}
+
 // noWorkerd says how to get workerd.
-const noWorkerd = "workerd, the Workers runtime whose Intl intl runs on outside a Worker, isn't on the PATH: add it to the repo's mise.toml [tools] (workerd = \"" + Version + "\", as the template's app has it) and run through mise (mise install, then mise run …), or set INTL_WORKERD to a workerd of your own"
+const noWorkerd = "workerd, the Workers runtime whose Intl intl runs on outside a Worker, isn't installed: the repo's package.json pins it (devDependencies, \"workerd\": \"" + Version + "\", as the template's app has it) and aube installs it (mise run setup, the template's mise.toml has node and aube), or set INTL_WORKERD to a workerd of your own"
 
 var (
 	base   string

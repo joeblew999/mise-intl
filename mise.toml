@@ -2,6 +2,7 @@
 # gets this file, nor needs mise at all: it gets intl from this Go module (go get -tool …/cmd/intl), and go tool intl
 # init writes the template's tool files into it, templates/'s. Each task is named for what it acts on (noun:verb):
 #   template: the template, templates/, a whole repo that runs where it is
+#     mise run template:setup        its own setup task: workerd from its package.json, in templates/node_modules
 #     mise run template:gen          its messages package, which the module's own build and tests need (gen there)
 #     mise run template:e2e          TestWalk on it: its numbered tasks in their order, through its own mise file, each checked
 #     mise run template:check-mise   misecheck on its tasks file against go tool intl's Go, and against the walk
@@ -16,14 +17,28 @@
 [settings]
 # go.mod's toolchain line is the Go pin; this makes mise install honour it.
 idiomatic_version_file_enable_tools = ["go"]
+# mise 2026.10 fails to install aube while it fetches its agent skill (a 404); it isn't needed.
+skills.fetch = false
 
 [tools]
-# intl's Intl outside a Worker: this repo's go test, go tool intl and the walk run on it (intl/workerd's Version, which
-# the template's mise.toml pins too: TestWorkerdPins).
-workerd = "1.20261104.1"
+# The template's: its setup task installs workerd from its package.json with them, as mise-cloudflare's template gets
+# wrangler (template:setup)
+node = "26.13.0"
+aube = { version = "2.8.4", workflow = ["release-plz.yml@refs/heads/main", "release.yml@refs/heads/main"] }
+
+[env]
+# intl's Intl outside a Worker, for this repo's go test and go tool intl: the template's workerd (intl/workerd finds
+# its native binary from this .bin)
+_.path = ["{{config_root}}/templates/node_modules/.bin"]
+
+[tasks."template:setup"]
+description = "The template's own setup, by its own task (mise run setup, in templates/; its Go is this module's, go.mod's toolchain line): workerd from its package.json in templates/node_modules (aube install), the one intl's Intl runs on in this repo's tests, go tool intl and the walk"
+dir = "{{config_root}}/templates"
+run = "mise run setup"
 
 [tasks."template:gen"]
 description = "The template's messages package (templates/locales/intl_gen.go), which go vet and go test of this module need: go tool intl gen, in the template"
+depends = ["template:setup"]
 dir = "{{config_root}}/templates"
 run = "go tool intl gen"
 
@@ -46,7 +61,7 @@ env = { REPO_PATH = "templates", E2E_STAMPED = "true" }
 run = 'go test . -run "^TestWalk$" -count=1 -v -timeout 15m{% if usage.version %} -args -version "{{usage.version}}"{% endif %}'
 
 [tasks."tool:test"]
-description = "go vet, and every Go test, run for real (no cached results): the walk's skip without REPO_PATH, so they need nothing but this file's tools; Intl comes from its workerd"
+description = "go vet, and every Go test, run for real (no cached results): the walk's skip without REPO_PATH, so they need nothing but this file's tools; Intl comes from the template's workerd (template:setup)"
 depends = ["template:gen"]
 run = 'go vet ./... && go test -count=1 ./...'
 

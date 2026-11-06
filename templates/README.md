@@ -9,5 +9,5 @@ runtime's own Intl writes in the reader's language, dates, prices, lists, relati
 - `go tool intl` (`mise run intl`): what's done for the app's languages, and what to run next.
 - [docs/intl/README.md](docs/intl/README.md): intl in this repo, every command.
 
-intl comes from one line of `go.mod`, with no binary; its tools come from mise: `mise.toml` pins Go (from `go.mod`)
-and workerd, which intl's Intl runs on.
+intl comes from one line of `go.mod`, with no binary; its tools come from mise: `mise.toml` pins Go (from `go.mod`),
+node and aube, and `mise run setup` installs workerd, which intl's Intl runs on, from `package.json` (`aube install`).

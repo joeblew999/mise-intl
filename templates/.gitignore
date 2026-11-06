@@ -8,3 +8,5 @@ intl_gen.go
 intl_messages_gen.go
 intl-messages.mjs
 /xliff/
+# aube install (package.json: workerd)
+node_modules/

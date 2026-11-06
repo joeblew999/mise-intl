@@ -40,9 +40,9 @@ const newOnly = "it changes the catalogs, so the walk runs it on a new repo (mis
 // steps are the template's numbered tasks, each checked. TestSteps fails unless they're exactly those, in their order.
 var steps = []walk.Step[*walker]{
 	{Task: "intl:03-init", Check: func(w *walker) {
-		before := w.Snapshot()
+		before := w.Snapshot("node_modules")
 		w.MustTask("intl:03-init")
-		if changed := walk.Diff(before, w.Snapshot()); len(changed) > 0 {
+		if changed := walk.Diff(before, w.Snapshot("node_modules")); len(changed) > 0 {
 			w.T.Fatalf("intl:03-init changed %s: the repo isn't what init writes", strings.Join(changed, ", "))
 		}
 		w.Pass("intl:03-init changed nothing: the repo is what init writes")

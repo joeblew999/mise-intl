@@ -1,7 +1,8 @@
 // Command intl is go tool intl: an app's languages, from its intl.toml (found up from the working directory). A repo
 // gets it from mise-intl's Go module, with one line of its go.mod (go get -tool github.com/joeblew999/mise-intl/cmd/intl):
 // Go builds it from that module's source, at the version go.mod pins. There is no binary to install. Its tools come from
-// mise (the repo's mise.toml pins workerd, which its Intl runs on outside a Worker), and each command is a task too,
+// mise (the repo's mise.toml pins node and aube, which install workerd, its Intl outside a Worker, from package.json),
+// and each command is a task too,
 // numbered in the order a repo meets them (.mise/tasks/intl.toml, which go tool intl init writes): mise run
 // intl:<nn>-<command> runs go tool intl <command>.
 //

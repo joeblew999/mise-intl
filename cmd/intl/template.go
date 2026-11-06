@@ -7,12 +7,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 
 	"github.com/joeblew999/mise-intl/internal/catalog"
 	"github.com/joeblew999/mise-intl/internal/setup"
 	"github.com/joeblew999/mise-intl/intl/config"
+	"github.com/joeblew999/mise-intl/intl/workerd"
 	"github.com/joeblew999/mise-intl/templates"
 )
 
@@ -37,7 +39,7 @@ func template(args []string) {
 	}
 	if !slices.ContainsFunc(c.Locales, func(l string) bool { return strings.EqualFold(l, "de") }) {
 		// German's name is only the new catalog's first comment, which the template's de.toml replaces at once: no
-		// Intl, so no workerd, before the mise.toml that pins it is written.
+		// Intl, so no workerd, before the package.json that pins it is written and installed.
 		must(catalog.AddLocale(c, "de", "German"))
 		fmt.Println("added de to intl.toml: the template's app is in English and German")
 		var err error
@@ -45,7 +47,8 @@ func template(args []string) {
 		must(err)
 	}
 	messages := messagesPackage(c)
-	for _, f := range []string{"app/main.go", "app/main_test.go", "mise.toml", "locales/en.toml", "locales/de.toml"} {
+	ownPackage := exists(filepath.Join(c.Root, "package.json"))
+	for _, f := range []string{"app/main.go", "app/main_test.go", "mise.toml", "package.json", "pnpm-lock.yaml", "locales/en.toml", "locales/de.toml"} {
 		b, _ := fs.ReadFile(templates.App, f)
 		to := filepath.Join(c.Root, filepath.FromSlash(f))
 		if dir, base := filepath.Split(f); dir == "locales/" {
@@ -54,6 +57,13 @@ func template(args []string) {
 		switch {
 		case f == "app/main.go":
 			b = bytes.ReplaceAll(b, []byte(`"`+templates.AppMessages+`"`), []byte(`"`+messages+`"`))
+		case f == "package.json" && ownPackage:
+			fmt.Printf("✓ package.json is the repo's own: left as it is. Add workerd to it (aube add -D workerd@%s), which intl's Intl runs on\n", workerd.Version)
+			continue
+		case f == "pnpm-lock.yaml" && ownPackage:
+			continue
+		case f == "package.json":
+			b = bytes.ReplaceAll(b, []byte(`"`+templates.AppName+`"`), []byte(`"`+npmName(name)+`"`))
 		case f == "mise.toml" && exists(to):
 			fmt.Printf("✓ mise.toml is the repo's own: left as it is. The template's app runs and tests with these:\n\n%s\n", b)
 			continue
@@ -108,8 +118,18 @@ func hasApp(root string) bool {
 	return exists(filepath.Join(root, "main.go")) || exists(filepath.Join(root, "app", "main.go"))
 }
 
+// npmName is a folder's name as a package.json name: lower case, with only what npm allows.
+func npmName(folder string) string {
+	s := strings.Trim(regexp.MustCompile(`[^a-z0-9._-]+`).ReplaceAllString(strings.ToLower(folder), "-"), "-._")
+	if s == "" {
+		return "app"
+	}
+	return s
+}
+
 // setUpApp installs what the template's app runs on, as mise-cloudflare's template installs its Worker's: mise trusts
-// the mise.toml template wrote, mise install gets its tools (Go from go.mod, and workerd), then its setup task runs.
+// the mise.toml template wrote, mise install gets its tools (Go from go.mod, node and aube), then its setup task runs
+// (aube install, which installs package.json's workerd, and go mod download).
 func setUpApp(root string) {
 	trustConfig(root, "mise.toml")
 	if _, err := exec.LookPath("mise"); err != nil {

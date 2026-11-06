@@ -2,7 +2,7 @@
 // parts: the tool's files, which go tool intl init writes into any repo (the numbered tasks,
 // the GitHub workflow, the Claude Code hook and skill, the docs, the .gitignore), and the
 // template's little app, which go tool intl template writes into a repo with no app yet (a page of intl's formats in
-// plain Go in app/, its catalogs in English and German, its tasks, its README). This file is the template's only Go at
+// plain Go in app/, its catalogs in English and German, its tasks, the package.json that pins its workerd, its README). This file is the template's only Go at
 // its top, as mise-cloudflare's templates.go is; the app's is a package of its own, in app/.
 package templates
 
@@ -21,7 +21,7 @@ var tool embed.FS
 // Tool is the template's tool files: what go tool intl init writes into a repo, at their paths there.
 var Tool fs.FS = tool
 
-//go:embed app/main.go app/main_test.go mise.toml README.md
+//go:embed app/main.go app/main_test.go mise.toml package.json pnpm-lock.yaml README.md
 //go:embed locales/en.toml locales/de.toml
 var app embed.FS
 
@@ -29,7 +29,7 @@ var app embed.FS
 // there.
 var App fs.FS = app
 
-// AppName is the template's name in its README.md: a repo gets its own instead, its folder's.
+// AppName is the template's name in its README.md and package.json: a repo gets its own instead, its folder's.
 const AppName = "intl-template"
 
 // AppMessages is the template's app's messages package, which go tool intl template writes as the repo's own.

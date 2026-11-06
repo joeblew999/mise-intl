@@ -41,15 +41,16 @@ server, `go test`, the tooling) the Intl is workerd's, the same V8, which intl s
 intl itself comes only from its Go module: there is no binary to install. Its tools come from mise, as every tool of
 the repo's does.
 
-`mise.toml` pins workerd, and the template's app has it. A repo with an app of its own adds the line to its
-`[tools]`: `workerd = "1.20261104.1"`.
+workerd, which intl's Intl runs on outside a Worker, is an npm package: the repo's `package.json` pins it and aube
+installs it (`mise run setup`: `aube install`), with node and aube from `mise.toml`, as the template's app has them. A
+repo with an app of its own adds it: `aube add -D workerd@1.20261104.1`.
 
 | | How | Checked by |
 |---|---|---|
 | The command | `go tool intl <command>`: Go builds it from mise-intl's source, at the version `go.mod` pins | `go.sum` |
 | The packages an app imports | `github.com/joeblew999/mise-intl/intl` (and `gsxintl`, in a gsx app) | `go.sum` and the compiler |
 | Both at one version | one line of `go.mod`: `tool github.com/joeblew999/mise-intl/cmd/intl` | Go |
-| Intl, off Cloudflare | workerd, from mise: the repo's `mise.toml` pins it (`INTL_WORKERD` names one of your own) | mise |
+| Intl, off Cloudflare | workerd, from npm: the repo's `package.json` pins it, aube installs it (`INTL_WORKERD` names one of your own) | the lockfile |
 | Go itself | `go.mod`'s `toolchain` line, which the repo's `mise.toml` has mise install | mise |
 
 Each command is a task too, numbered in the order a repo meets them: `mise run intl:06-gen` runs `go tool intl gen`.
@@ -110,8 +111,9 @@ server and `gsx info` see it like any project code:
 ## Set up an app
 
 intl needs Go 1.26 or newer, the same as gsx. [mise](https://mise.jdx.dev) brings every tool: Go (from `go.mod`'s
-`toolchain`, which `init` tells mise to use), gsx (a `go tool`), and [workerd](https://github.com/cloudflare/workerd),
-whose Intl the tooling, the tests and an ordinary Go server run on.
+`toolchain`, which `init` tells mise to use), gsx (a `go tool`), and node and aube, which install
+[workerd](https://github.com/cloudflare/workerd) from `package.json`: its Intl is what the tooling, the tests and an
+ordinary Go server run on.
 Translating with Claude also needs [Claude Code](https://code.claude.com) (`claude`) installed.
 
 1. Add intl to the repo and set it up, in its Go module (`go mod init <module>` first, if it has none):
@@ -183,9 +185,9 @@ Translating with Claude also needs [Claude Code](https://code.claude.com) (`clau
 4. Give intl its Intl.
 
    On an ordinary Go server, start workerd's before serving, with the catalogs `go tool intl gen` embeds in your
-   messages package (`intl_messages_gen.go`). workerd comes from mise, which the repo's `mise.toml` pins it for (run the
-   server through mise, or put its release binary in your image and name it with `INTL_WORKERD`). Each formatted value
-   is a request to it on 127.0.0.1, about 0.1 ms:
+   messages package (`intl_messages_gen.go`). intl runs the workerd in the repo's `node_modules` (`aube install`, from
+   `package.json`), found up from the working directory; in an image without it, put workerd's release binary there
+   and name it with `INTL_WORKERD`. Each formatted value is a request to it on 127.0.0.1, about 0.1 ms:
 
    ```go
    stop, err := workerd.Start(locales.Messages) // github.com/joeblew999/mise-intl/intl/workerd

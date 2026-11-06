@@ -11,7 +11,8 @@ command, and so is checking all of it in CI.
 > **intl itself comes only from this Go module: there is no binary.** One line of a repo's `go.mod` pins it, the
 > command and the packages at one version: the command is `go tool intl`, which Go builds from this module's source at
 > the version `go.mod` pins, checked by `go.sum`. **Its tools come from mise**, as every tool of our repos does: the
-> repo's `mise.toml` pins workerd, which intl's Intl runs on outside a Cloudflare Worker (the template's app has it),
+> repo's `mise.toml` pins node and aube, and aube installs workerd, which intl's Intl runs on outside a Cloudflare
+> Worker, from the repo's `package.json`, as mise-cloudflare's template gets wrangler (the template's app has both),
 > and each command is a numbered task, `mise run intl:<nn>-<command>`.
 
 ## Use it in your repo
@@ -41,9 +42,10 @@ that's new or has a Go app of its own:
    ```
 
    It writes the template's little app, `app/`: one page of intl's formats in plain Go, in English and German, with
-   its catalogs, a README and the `mise.toml` that pins its tools (Go from `go.mod`, and workerd, which intl's Intl
-   runs on), and installs them. It never writes over a file: a repo with an app of its own gets none of it, and adds
-   `workerd = "1.20261104.1"` to its own `mise.toml`'s `[tools]`.
+   its catalogs, a README, the `mise.toml` that pins its tools (Go from `go.mod`, node and aube) and the `package.json`
+   that pins workerd, which intl's Intl runs on, and installs them (`mise run setup`: `aube install`). It never writes
+   over a file: a repo with an app of its own gets none of it, and adds workerd to its `package.json` (`aube add -D
+   workerd@1.20261104.1`, with node and aube in its `mise.toml`, as the template's).
 
 4. **Then:**
 

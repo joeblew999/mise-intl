@@ -1,17 +1,25 @@
-# A Go app's own tools: Go (go.mod's toolchain line), workerd, which intl's Intl runs on outside a Worker, and what
-# downloads the modules go.mod pins (mise run setup). intl itself comes from go.mod (go tool intl): its tasks are
-# .mise/tasks/intl.toml, which go tool intl init writes (then mise run intl shows the way).
+# A Go app's own tools: Go (go.mod's toolchain line), and workerd, which intl's Intl runs on outside a Worker, from
+# package.json, as mise-cloudflare's template gets wrangler (mise run setup installs both: workerd, and the modules
+# go.mod pins). intl itself comes from go.mod (go tool intl): its tasks are .mise/tasks/intl.toml, which go tool intl
+# init writes (then mise run intl shows the way).
 
 [settings]
 # go.mod's toolchain line is the Go pin; this makes mise install honour it.
 idiomatic_version_file_enable_tools = ["go"]
+# mise 2026.10 fails to install aube while it fetches its agent skill (a 404); it isn't needed.
+skills.fetch = false
 
 [tools]
-workerd = "1.20261104.1"   # intl's Intl outside a Worker: go tool intl, go test, the app itself (intl/workerd)
+node = "26.13.0"   # runs workerd's npm package
+aube = { version = "2.8.4", workflow = ["release-plz.yml@refs/heads/main", "release.yml@refs/heads/main"] }     # installs workerd from package.json
+
+[env]
+# workerd's npm bin, where intl finds it (intl/workerd: node_modules/.bin, then the PATH)
+_.path = ["{{config_root}}/node_modules/.bin"]
 
 [tasks.setup]
-description = "Download the modules go.mod pins, intl's among them"
-run = "go mod download"
+description = "Install the pinned workerd (package.json), and download the modules go.mod pins, intl's among them"
+run = "aube install && go mod download"
 
 [tasks.serve]
 description = "Run the app: http://localhost:8080 (ADDR to change it)"
