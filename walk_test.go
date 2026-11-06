@@ -57,6 +57,7 @@ var steps = []walk.Step[*walker]{
 	}},
 	{Task: "intl:05-show", Check: func(w *walker) {
 		var s struct {
+			Version        string
 			Generated, App bool
 			Left           int
 			Next, Command  string
@@ -66,6 +67,15 @@ var steps = []walk.Step[*walker]{
 			w.T.Fatalf("intl:05-show --json: %+v", s)
 		}
 		w.Pass("intl:05-show says next: %s (without mise: %s)", s.Next, s.Command)
+		// The version is the release the repo was made at (-version), or a checkout's build.
+		want := "(devel)"
+		if *walk.Version != "" {
+			want = strings.TrimPrefix(*walk.Version, "v")
+		}
+		if s.Version != want {
+			w.T.Fatalf("intl:05-show's version is %q, not %q: the one go.mod pins", s.Version, want)
+		}
+		w.Pass("intl:05-show's version is the one go.mod pins: %s", s.Version)
 	}},
 	{Task: "intl:06-gen", Check: func(w *walker) {
 		w.MustTask("intl:06-gen")
@@ -102,6 +112,14 @@ var steps = []walk.Step[*walker]{
 			w.T.Fatal("intl:07-status passes with nl untranslated")
 		}
 		w.Pass("intl:08-add-locale nl: Dutch in intl.toml with its catalog, and intl:07-status fails until it's translated")
+		// A contributor's pull request may leave its translations to the maintainer; a push may not.
+		if out, err := w.Task([]string{"INTL_MISSING=", "GITHUB_EVENT_NAME=pull_request"}, "", "intl:04-check"); err != nil || !strings.Contains(out, "only warn") {
+			w.T.Fatalf("intl:04-check on a pull request, nl untranslated: %v\n%s", err, out)
+		}
+		if _, err := w.Task([]string{"INTL_MISSING=", "GITHUB_EVENT_NAME=push"}, "", "intl:04-check"); err == nil {
+			w.T.Fatal("intl:04-check on a push passes with nl untranslated")
+		}
+		w.Pass("intl:04-check with nl untranslated: a pull request only warns, a push fails")
 	}},
 	{Task: "intl:09-todo", Check: func(w *walker) {
 		if w.inPlace {

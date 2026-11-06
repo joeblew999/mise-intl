@@ -18,7 +18,7 @@ run = 'go tool intl init{% if usage.locales %} --locales "{{usage.locales}}"{% e
 
 ["intl:04-check"]
 description = "04. Every problem, for CI: syntax, arguments, plural forms, missing and stale translations, unused messages, intl's files current (only the languages named, when there are any)"
-usage = 'flag "--missing <how>" help="fail, or warn (a contributor whose pull request the maintainer translates after merging)"; arg "[locales]..." help="only these languages: de fr"'
+usage = 'flag "--missing <how>" help="fail, or warn: missing and stale translations only reported (default: INTL_MISSING, else warn on a GitHub pull request, else fail)"; arg "[locales]..." help="only these languages: de fr"'
 run = 'go tool intl check{% if usage.missing %} --missing "{{usage.missing}}"{% endif %}{% for a in usage.locales %} "{{a}}"{% endfor %}'
 
 ["intl:05-show"]

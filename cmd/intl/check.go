@@ -17,11 +17,19 @@ import (
 // check is go tool intl check (04): every problem, for CI: syntax, arguments, plural categories, completeness, unused
 // messages, gsxui text, intl.sum, and intl's files as this version writes them (exit 1 if any). With locales, only
 // theirs, writing nothing; --missing warn only reports missing and stale translations (a contributor's pull request).
+// Without --missing, INTL_MISSING says, else GitHub Actions' pull_request runs only warn: a contributor's pull request
+// may leave its translations to the maintainer, who translates after merging. Pushes and releases stay strict.
 func check(args []string) {
 	c := app()
 	f := flag.NewFlagSet("check", flag.ExitOnError)
-	missing := f.String("missing", "fail", `missing or stale translations: "fail", or "warn" (a contributor's pull request, which the maintainer translates after merging)`)
+	missing := f.String("missing", missingDefault(), `missing or stale translations: "fail", or "warn" (a contributor's pull request, which the maintainer translates after merging)`)
 	f.Parse(args)
+	if *missing != "fail" && *missing != "warn" {
+		fail(fmt.Errorf("intl check: --missing %q: fail or warn", *missing))
+	}
+	if *missing == "warn" && os.Getenv("INTL_MISSING") == "" && os.Getenv("GITHUB_EVENT_NAME") == "pull_request" {
+		fmt.Println("· a pull request (GITHUB_EVENT_NAME=pull_request): missing and stale translations only warn; pushes and releases stay strict (INTL_MISSING=fail to fail)")
+	}
 	if f.NArg() > 0 {
 		os.Exit(checkLocales(c, f.Args()))
 	}
@@ -161,4 +169,16 @@ func checkAll(c config.Config, warnMissing bool) int {
 	}
 	fmt.Printf("✓ %d messages in %d locales\n", len(p.Messages), len(p.Locales))
 	return 0
+}
+
+// missingDefault is check's --missing when it isn't given: INTL_MISSING, else "warn" on a GitHub Actions pull_request
+// run, else "fail".
+func missingDefault() string {
+	if v := os.Getenv("INTL_MISSING"); v != "" {
+		return v
+	}
+	if os.Getenv("GITHUB_EVENT_NAME") == "pull_request" {
+		return "warn"
+	}
+	return "fail"
 }

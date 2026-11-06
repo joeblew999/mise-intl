@@ -220,9 +220,9 @@ Translating with Claude also needs [Claude Code](https://code.claude.com) (`clau
    ```
 
 6. Day to day: `mise run intl:06-gen` before `gsx generate` (make your generate task depend on it), and
-   `mise run intl:04-check` in CI (the workflow `init` wrote runs `mise run intl:verify`). For a contributor's pull request, `INTL_MISSING=warn` (`go tool intl check -missing
-   warn`) reports missing and stale translations without failing, so you can translate them after merging; keep
-   releases strict.
+   `mise run intl:04-check` in CI (the workflow `init` wrote runs `mise run intl:verify`). On a pull request (GitHub Actions' `pull_request` runs), `go tool intl check` only
+   reports missing and stale translations, without failing, so a contributor can leave them and you translate them
+   after merging; pushes and releases stay strict. `INTL_MISSING=fail` or `warn` (or `--missing`) says otherwise.
 
 `intl.toml` holds the languages, where the catalogs are, notes for translators and, if you want one, a README badge:
 
