@@ -12,9 +12,9 @@ import (
 	"github.com/joeblew999/mise-intl/intl/config"
 )
 
-// report is go tool intl show --json: where the repo is, and what to run next.
+// report is mise-intl show --json: where the repo is, and what to run next.
 type report struct {
-	Version   string   `json:"version"`   // this build of intl: the module version go.mod pins
+	Version   string   `json:"version"`   // this mise-intl: the release .mise/config.toml pins
 	Locales   []string `json:"locales"`   // the shipped languages, the source first
 	Generated bool     `json:"generated"` // the messages package is the catalogs' (gen has run since they changed)
 	App       bool     `json:"app"`       // the repo has a Go program of its own (main.go, or the template's app/main.go)
@@ -24,7 +24,7 @@ type report struct {
 	Command   string   `json:"command"`   // the same without mise
 }
 
-// show is go tool intl show (05), and go tool intl with no command (mise run intl): the steps, which are done for
+// show is mise-intl show (05), and mise-intl with no command (mise run intl): the steps, which are done for
 // this repo, and the next one. It asks Intl nothing, so it's quick.
 func show(args []string) {
 	f := flag.NewFlagSet("show", flag.ExitOnError)
@@ -35,7 +35,7 @@ func show(args []string) {
 	switch {
 	case err != nil:
 		r.Problems = append(r.Problems, "no intl.toml: this repo isn't set up for intl yet")
-		r.Next, r.Command = "go tool intl init", "go tool intl init"
+		r.Next, r.Command = "mise-intl init", "mise-intl init"
 	default:
 		r.Locales = c.Locales
 		r.Problems = append(r.Problems, stale(c.Root)...)
@@ -50,18 +50,18 @@ func show(args []string) {
 			}
 		}
 		switch {
-		case anyHas(r.Problems, "go tool intl init"):
-			r.Next, r.Command = "mise run intl:03-init", "go tool intl init"
+		case anyHas(r.Problems, "mise-intl init"):
+			r.Next, r.Command = "mise run intl:03-init", "mise-intl init"
 		case len(r.Problems) > 0:
-			r.Next, r.Command = "mise run intl:04-check", "go tool intl check"
+			r.Next, r.Command = "mise run intl:04-check", "mise-intl check"
 		case !r.Generated:
-			r.Next, r.Command = "mise run intl:06-gen", "go tool intl gen"
+			r.Next, r.Command = "mise run intl:06-gen", "mise-intl gen"
 		case !r.App:
-			r.Next, r.Command = "mise run intl:template", "go tool intl template"
+			r.Next, r.Command = "mise run intl:template", "mise-intl template"
 		case r.Left > 0:
-			r.Next, r.Command = "mise run intl:09-todo", "go tool intl todo"
+			r.Next, r.Command = "mise run intl:09-todo", "mise-intl todo"
 		default: // every language complete: another, or a message changed then gen
-			r.Next, r.Command = "mise run intl:08-add-locale", "go tool intl add-locale"
+			r.Next, r.Command = "mise run intl:08-add-locale", "mise-intl add-locale"
 		}
 	}
 	if *jsonOut {
@@ -71,8 +71,8 @@ func show(args []string) {
 		return
 	}
 	mark := map[bool]string{true: "✓", false: "·"}
-	fmt.Printf("intl %s, from the module go.mod pins; languages: %v\n", r.Version, r.Locales)
-	fmt.Printf("%s 03-init   intl's files, as this version writes them\n", mark[!anyHas(r.Problems, "go tool intl init") && len(r.Locales) > 0])
+	fmt.Printf("mise-intl %s; languages: %v\n", r.Version, r.Locales)
+	fmt.Printf("%s 03-init   intl's files, as this version writes them\n", mark[!anyHas(r.Problems, "mise-intl init") && len(r.Locales) > 0])
 	fmt.Printf("%s 06-gen    the messages package is the catalogs'\n", mark[r.Generated])
 	fmt.Printf("%s app       a Go program of the repo's own (or the template's: mise run intl:template)\n", mark[r.App])
 	fmt.Printf("%s 09-todo   every language translated (%d messages left)\n", mark[r.Left == 0 && len(r.Locales) > 0], r.Left)

@@ -4,3 +4,6 @@
 .DS_Store
 # aube install (package.json: workerd)
 node_modules/
+# mise run tool:build, and goreleaser (tool:release --dry-run)
+bin/
+dist/

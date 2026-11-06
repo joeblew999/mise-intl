@@ -1,8 +1,8 @@
 // Package workerd is intl's Intl outside a Cloudflare Worker: workerd, the Workers runtime, serving intl's
 // js/intl-worker.mjs with the app's catalogs, set as intl.Runtime. On a Worker, Intl is the Worker's own; anywhere
-// else (an ordinary Go server, go test, go tool intl) it is this one, so every place formats with the same engine.
+// else (an ordinary Go server, go test, mise-intl) it is this one, so every place formats with the same engine.
 //
-// An app on an ordinary Go server starts it before serving, with the catalogs go tool intl gen embedded in its
+// An app on an ordinary Go server starts it before serving, with the catalogs mise-intl gen embedded in its
 // messages package:
 //
 //	stop, err := workerd.Start(locales.Messages)
@@ -12,7 +12,7 @@
 //	defer stop()
 //
 // workerd comes from npm, as mise-cloudflare's template gets wrangler: the repo's package.json pins it at Version (the
-// template's app's does, go tool intl template), aube installs it (mise run setup), and intl runs the native workerd
+// template's app's does, mise-intl template), aube installs it (mise run setup), and intl runs the native workerd
 // of the node_modules nearest the working directory, or of the one whose .bin is on the PATH (Path). INTL_WORKERD names
 // a workerd of your own instead (a server's image built without node_modules). Each Intl call is a request to it on
 // 127.0.0.1, about 0.1 ms. It ends with the process that started it, however that process ends (launch).
@@ -217,7 +217,7 @@ const config :Workerd.Config = (
 	return stop, nil
 }
 
-// Tree formats a message tree as go tool intl gen writes it (js/intl.mjs message) in lang with args: for tests of
+// Tree formats a message tree as mise-intl gen writes it (js/intl.mjs message) in lang with args: for tests of
 // the catalogs' compiler.
 func Tree(lang string, tree json.RawMessage, args ...string) (string, error) {
 	return post(map[string]any{"method": "tree", "args": append([]string{lang}, args...), "tree": tree})

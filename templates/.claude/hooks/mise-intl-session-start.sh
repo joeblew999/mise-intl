@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Written by go tool intl init: don't edit it. After upgrading intl, go tool intl init writes it again.
+# Written by mise-intl init: don't edit it. After upgrading intl, mise-intl init writes it again.
 # A Claude Code cloud session starts on a bare Linux machine with only the repo cloned. Install mise, then every tool
 # the repo pins (Go from go.mod), then run each folder's own setup task if it has one, so `mise run …` and
-# `go tool intl …` work straight away. Does nothing on your own machine.
-# Usage: intl-session-start.sh [folder …], folders relative to the repo; with none, the repo's own folder.
+# `mise-intl …` work straight away. Does nothing on your own machine.
+# Usage: mise-intl-session-start.sh [folder …], folders relative to the repo; with none, the repo's own folder.
 set -euo pipefail
 [ "${CLAUDE_CODE_REMOTE:-}" = true ] || exit 0
 export PATH="$HOME/.local/bin:$PATH"

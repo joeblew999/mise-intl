@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"slices"
 	"strings"
 
@@ -18,7 +19,7 @@ import (
 	"github.com/joeblew999/mise-intl/templates"
 )
 
-// template is go tool intl template: the template's little app (templates.App: a page of intl's formats in plain Go
+// template is mise-intl template: the template's little app (templates.App: a page of intl's formats in plain Go
 // in app/, its catalogs in English and German, its tasks, its README) written into a repo with no app yet, so it
 // runs straight away. It never writes over a file of the repo's own: a catalog only while it has no message (init's
 // starter), and German goes into intl.toml only when the repo doesn't ship it. The app's import of its messages
@@ -36,6 +37,17 @@ func template(args []string) {
 	if hasApp(c.Root) {
 		fmt.Println("✓ the repo has a Go program of its own (main.go, or app/main.go): none of the template's app written")
 		return
+	}
+	if setup.GoMod(c.Root) == "" {
+		// A new repo's go.mod, so it needs no Go before mise brings it: the module named for the folder, the Go this
+		// build is, and intl's packages at this release (a checkout's build leaves them to go mod tidy, or the repo's
+		// replace).
+		gomod := "module " + npmName(name) + "\n\ngo " + strings.TrimPrefix(runtime.Version(), "go") + "\n"
+		if version != "" {
+			gomod += "\nrequire " + intlModule + " v" + buildVersion() + "\n"
+		}
+		_, err := writeChanged(c.Root, filepath.Join(c.Root, "go.mod"), []byte(gomod))
+		must(err)
 	}
 	if !slices.ContainsFunc(c.Locales, func(l string) bool { return strings.EqualFold(l, "de") }) {
 		// German's name is only the new catalog's first comment, which the template's de.toml replaces at once: no
@@ -76,7 +88,7 @@ func template(args []string) {
 	}
 	must(read(c).Generate(os.Stderr))
 	setUpApp(c.Root)
-	fmt.Println("✓ the template's app, in English and German: next, go tool intl (or mise run intl), then go run ./app (mise run serve)")
+	fmt.Println("✓ the template's app, in English and German: next, mise run intl, then mise run serve")
 }
 
 // messagesPackage is the import path of the repo's messages package, its catalogs' folder in its module.
@@ -128,18 +140,20 @@ func npmName(folder string) string {
 }
 
 // setUpApp installs what the template's app runs on, as mise-cloudflare's template installs its Worker's: mise trusts
-// the mise.toml template wrote, mise install gets its tools (Go from go.mod, node and aube), then its setup task runs
-// (aube install, which installs package.json's workerd, and go mod download).
+// the mise.toml template wrote, then the repo's own setup task installs package.json's workerd and the Go modules the
+// app imports (mise installs Go, node and aube for it first). Without a setup task, it says how instead.
 func setUpApp(root string) {
 	trustConfig(root, "mise.toml")
-	if _, err := exec.LookPath("mise"); err != nil {
-		fmt.Println("· no mise here: install it (https://mise.jdx.dev), then mise install and mise run setup")
+	has := exec.Command("mise", "tasks", "info", "setup")
+	has.Dir = root
+	if has.Run() != nil {
+		fmt.Println("the repo's mise.toml has no setup task: install workerd its own way (package.json pins it), and go mod tidy, then mise run intl")
 		return
 	}
-	for _, args := range [][]string{{"install"}, {"run", "setup"}} {
-		fmt.Println("$ mise " + strings.Join(args, " "))
-		cmd := exec.Command("mise", args...)
-		cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = root, os.Stdin, os.Stdout, os.Stderr
-		must(cmd.Run())
+	fmt.Println("$ mise run setup")
+	cmd := exec.Command("mise", "run", "setup")
+	cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = root, os.Stdin, os.Stdout, os.Stderr
+	if err := cmd.Run(); err != nil {
+		fail(fmt.Errorf("mise run setup: %w", err))
 	}
 }

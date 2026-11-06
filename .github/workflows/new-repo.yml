@@ -1,6 +1,6 @@
 # A new repo on each of the three operating systems, from the release just made: the walk on a new repo made the
-# README's way (an empty folder with its own git, go mod init, intl's tool line at the new tag from the Go proxy, go
-# tool intl init, go tool intl template, go tool intl), every numbered step: mise run new-repo:e2e --version <tag>. It runs after the release run
+# README's way (an empty folder with its own git, mise exec github:joeblew999/mise-intl@<tag> -- mise-intl init, mise
+# run intl:template, mise run intl), every numbered step: mise run new-repo:e2e --version <tag>. It runs after the release run
 # has passed, so releases stay as fast as before, and by hand for any release. Shell steps only, as ci.yml.
 name: new-repo
 
@@ -66,6 +66,6 @@ jobs:
           mise install
 
       # The new repo's tasks run in each OS's own shell (cmd on Windows): they have no shell syntax. --skip-deps: the
-      # release is what's tried, not this checkout's template (template:gen).
+      # release is what's tried, not a build of this checkout (tool:install).
       - name: A new repo, made the README's way at the release, walked (mise run new-repo:e2e --version)
         run: mise run --skip-deps new-repo:e2e --version "$VERSION"

@@ -6,7 +6,7 @@ import (
 	"os/exec"
 )
 
-// verify is go tool intl verify: what the repo's GitHub workflow runs once it has checked out, the repo's own setup
+// verify is mise-intl verify: what the repo's GitHub workflow runs once it has checked out, the repo's own setup
 // and test tasks when it has them (with mise), then check. Run here, it does what GitHub does.
 func verify(args []string) {
 	if _, err := exec.LookPath("mise"); err == nil {

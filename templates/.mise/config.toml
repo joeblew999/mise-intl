@@ -1,8 +1,12 @@
-# intl for this repo, with mise: go tool intl is built by Go from mise-intl's module at the version go.mod pins, so the
-# tool intl needs from mise is Go, at go.mod's version (its toolchain line, or else its go line). go tool intl init
-# writes this file when the repo has none, as mise-cloudflare's init writes its pin; from then on it is the repo's. The
-# numbered tasks beside it (.mise/tasks/intl.toml) run with it.
+# mise-intl for this repo, from its GitHub releases: mise install gets it. mise-intl init writes this file when the repo
+# has none, pinning exactly the release that ran it (here in the template it's latest); from then on the pin is the
+# repo's (a newer release's init, run by hand, moves it). A .mise/config.local.toml beside it, never committed,
+# overrides it on one machine: mise-intl's own checkout pins its build there (local). The Go the tasks run with is
+# go.mod's.
 
 [settings]
-# go.mod's toolchain line is the Go pin; this makes mise install honour it.
+# go.mod's toolchain line, or its go line, is the Go pin; this makes mise install honour it.
 idiomatic_version_file_enable_tools = ["go"]
+
+[tools]
+"github:joeblew999/mise-intl" = "latest"

@@ -3,7 +3,7 @@
 *.out
 # mise's override for one machine, never committed
 .mise/config.local.toml
-# go tool intl gen output (mise run intl)
+# mise-intl gen output (mise run intl)
 intl_gen.go
 intl_messages_gen.go
 intl-messages.mjs

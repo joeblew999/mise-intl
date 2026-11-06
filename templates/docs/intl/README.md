@@ -1,7 +1,7 @@
 # intl in this repo
 
-Written by `go tool intl init`, for the version this repo's `go.mod` pins: don't edit it. After upgrading intl,
-`go tool intl init` writes it again, and `go tool intl check` fails until it has. intl is
+Written by `mise-intl init`, for the version this repo's `go.mod` pins: don't edit it. After upgrading intl,
+`mise-intl init` writes it again, and `mise-intl check` fails until it has. intl is
 [mise-intl](https://github.com/joeblew999/mise-intl).
 
 Every language a Go app ships, with [gsx](https://github.com/gsxhq/gsx) or without, through the runtime's own `Intl`. Messages are ICU
@@ -36,10 +36,11 @@ style, a slider whose value is written in kilometres, need no request and no Go:
 Go decides nothing about a language: no CLDR tables, no formatting of its own. Outside a Worker (an ordinary Go
 server, `go test`, the tooling) the Intl is workerd's, the same V8, which intl starts itself (`intl/workerd`).
 
-## What the repo needs: intl's Go module, and mise
+## What the repo needs: mise
 
-intl itself comes only from its Go module: there is no binary to install. Its tools come from mise, as every tool of
-the repo's does.
+Every tool comes from mise, intl's command among them: `mise-intl`, a binary on
+[mise-intl's releases](https://github.com/joeblew999/mise-intl/releases), which mise installs at the release
+`.mise/config.toml` pins (`init` writes the pin), as mise-cloudflare's repos get theirs.
 
 workerd, which intl's Intl runs on outside a Worker, is an npm package: the repo's `package.json` pins it and aube
 installs it (`mise run setup`: `aube install`), with node and aube from `mise.toml`, as the template's app has them. A
@@ -47,13 +48,12 @@ repo with an app of its own adds it: `aube add -D workerd@1.20261104.1`.
 
 | | How | Checked by |
 |---|---|---|
-| The command | `go tool intl <command>`: Go builds it from mise-intl's source, at the version `go.mod` pins | `go.sum` |
-| The packages an app imports | `github.com/joeblew999/mise-intl/intl` (and `gsxintl`, in a gsx app) | `go.sum` and the compiler |
-| Both at one version | one line of `go.mod`: `tool github.com/joeblew999/mise-intl/cmd/intl` | Go |
+| The command | `mise-intl <command>`: the binary of the release `.mise/config.toml` pins (`"github:joeblew999/mise-intl"`) | mise (the release's checksums) |
+| The packages an app imports | `github.com/joeblew999/mise-intl/intl` (and `gsxintl`, in a gsx app), the same release, which `init` and `intl:template` require in `go.mod` | `go.sum` and the compiler |
 | Intl, off Cloudflare | workerd, from npm: the repo's `package.json` pins it, aube installs it (`INTL_WORKERD` names one of your own) | the lockfile |
-| Go itself | `go.mod`'s `toolchain` line, which the repo's `mise.toml` has mise install | mise |
+| Go itself | `go.mod`'s `toolchain` line (or its `go` line), which `.mise/config.toml` has mise install | mise |
 
-Each command is a task too, numbered in the order a repo meets them: `mise run intl:06-gen` runs `go tool intl gen`.
+Each command is a task too, numbered in the order a repo meets them: `mise run intl:06-gen` runs `mise-intl gen`.
 
 ## Using it day to day
 
@@ -61,7 +61,7 @@ Every task runs with no arguments (a click in an editor's mise panel), taking wh
 arguments only narrow it, straight after the task name. `mise run <task> --help` explains any task.
 
 ```sh
-mise run intl                       # what's done, and what to run next (go tool intl)
+mise run intl                       # what's done, and what to run next (mise-intl)
 mise run intl:04-check              # every problem, for CI: catalogs, plurals, unused messages, intl's files
 mise run intl:06-gen                # compile the catalogs after editing them (gsx generate needs this first)
 mise run intl:07-status             # how far along each language is
@@ -79,7 +79,7 @@ mise run intl:10-translate de ja         # only German and Japanese
 mise run intl:13-confirm de:cart.items   # only one translation
 ```
 
-Each runs the command of its name: `mise run intl:06-gen` runs `go tool intl gen`. The usual loop: write
+Each runs the command of its name: `mise run intl:06-gen` runs `mise-intl gen`. The usual loop: write
 or change messages in the source catalog, `mise run intl:10-translate`, `mise run intl:04-check`. A new language:
 `mise run intl:08-add-locale fr`, then `mise run intl:10-translate`. (Adding its id to `intl.toml`'s `locales` by
 hand works too: the next `mise run intl:06-gen` writes its catalog.)
@@ -89,9 +89,9 @@ hand works too: the next `mise run intl:06-gen` writes its catalog.)
 intl works in any Go app. Without gsx, everything is in `intl`: the messages are typed Go values (`locales.HomeTitle`,
 `locales.HomeNotes(n)`), `intl.Text(ctx, x)` is a message's or a value's text in the request's language, and
 `v.Element(ctx)` is a value's element (its tag, attributes and text) for your own templates. The template's app,
-`go tool intl template`, is that: a page in plain Go, `net/http`, `html/template`, `intl.Site` and `intl.Text`.
+`mise-intl template`, is that: a page in plain Go, `net/http`, `html/template`, `intl.Site` and `intl.Text`.
 
-With gsx, `gsxintl` is the one package that imports gsx (`go tool intl init` writes it into `gsx.toml` when the app
+With gsx, `gsxintl` is the one package that imports gsx (`mise-intl init` writes it into `gsx.toml` when the app
 has gsx: gsxui, a `gsx.toml`, or `.gsx` files). intl uses gsx's own mechanisms, so `gsx generate`, the gsx language
 server and `gsx info` see it like any project code:
 
@@ -110,22 +110,24 @@ server and `gsx info` see it like any project code:
 
 ## Set up an app
 
-intl needs Go 1.26 or newer, the same as gsx. [mise](https://mise.jdx.dev) brings every tool: Go (from `go.mod`'s
-`toolchain`, which `init` tells mise to use), gsx (a `go tool`), and node and aube, which install
+intl needs Go 1.26 or newer, the same as gsx. [mise](https://mise.jdx.dev) brings every tool: mise-intl (the release
+`.mise/config.toml` pins), Go (from `go.mod`, which `init` tells mise to use), gsx, and node and aube, which install
 [workerd](https://github.com/cloudflare/workerd) from `package.json`: its Intl is what the tooling, the tests and an
 ordinary Go server run on.
 Translating with Claude also needs [Claude Code](https://code.claude.com) (`claude`) installed.
 
-1. Add intl to the repo and set it up, in its Go module (`go mod init <module>` first, if it has none):
+1. Add intl to the repo and set it up:
 
    ```sh
-   go run github.com/joeblew999/mise-intl/cmd/intl@latest init --locales en,de,ar   # pins itself in go.mod: go tool intl from then on
-   mise run intl:template  # only in a repo with no app yet: the template's little app, in English and German, and its tools
+   mise exec github:joeblew999/mise-intl@latest -- mise-intl init --locales en,de,ar   # pins itself in .mise/config.toml
+   mise run intl:template  # only in a repo with no app yet: the template's little app, its go.mod, and its tools
    ```
 
    `init` writes:
-   - intl's tasks, `.mise/tasks/intl.toml`, where mise finds them with no configuration
-     ([Task discovery](https://mise.jdx.dev/tasks/task-discovery.html));
+   - intl's tasks, `.mise/tasks/mise-intl.toml`, where mise finds them with no configuration
+     ([Task discovery](https://mise.jdx.dev/tasks/task-discovery.html)), and `.mise/config.toml`, pinning mise-intl at
+     the release that ran `init`, with the Go `go.mod` names;
+   - in a Go module, intl's packages required in `go.mod` at the same release;
    - the `intl` skill into `.claude/skills`, and Claude Code's hook for cloud sessions;
    - these docs, `docs/intl/README.md`, and the GitHub workflow, `.github/workflows/intl.yml`;
    - `intl.toml`, the source catalog and a catalog per language;
@@ -133,9 +135,9 @@ Translating with Claude also needs [Claude Code](https://code.claude.com) (`clau
    - the generated files into `.gitignore`.
 
    It picks up gsxui from `gsxui.json`, and then compiles the catalogs. Running it again leaves what is the repo's
-   alone. To upgrade intl, run it again at the newer release (`go run …/cmd/intl@latest init`, which moves go.mod's pin
-   to it), or upgrade the module as any Go module (`go get -tool …/cmd/intl@latest`, then `go tool intl init`): it
-   writes intl's own files again, and `go tool intl check` says when they're out of date.
+   alone. To upgrade intl, run it again at the newer release (`mise exec github:joeblew999/mise-intl@latest --
+   mise-intl init`), which moves the pin in `.mise/config.toml` and `go.mod`'s requirement forward to it, and writes
+   intl's own files again; `mise-intl check` says when they're out of date.
 
 2. Serve every request through `intl.Site`. It handles the locale URLs (`/about`, `/de/about`), the locale cookie,
    `Content-Language`, noindex while a catalog is incomplete, and the viewer's time zone and clock. `IsPage` names
@@ -184,7 +186,7 @@ Translating with Claude also needs [Claude Code](https://code.claude.com) (`clau
 
 4. Give intl its Intl.
 
-   On an ordinary Go server, start workerd's before serving, with the catalogs `go tool intl gen` embeds in your
+   On an ordinary Go server, start workerd's before serving, with the catalogs `mise-intl gen` embeds in your
    messages package (`intl_messages_gen.go`). intl runs the workerd in the repo's `node_modules` (`aube install`, from
    `package.json`), found up from the working directory; in an image without it, put workerd's release binary there
    and name it with `INTL_WORKERD`. Each formatted value is a request to it on 127.0.0.1, about 0.1 ms:
@@ -211,10 +213,10 @@ Translating with Claude also needs [Claude Code](https://code.claude.com) (`clau
    ```
 
    ```sh
-   go tool intl assets -worker build -browser dist/static
+   mise-intl assets -worker build -browser dist/static
    ```
 
-   Either way, the browser needs `intl-browser.mjs` and the `intl.mjs` it imports: `go tool intl assets -browser
+   Either way, the browser needs `intl-browser.mjs` and the `intl.mjs` it imports: `mise-intl assets -browser
    static` copies them. Copy them in your build and keep them out of git, like other generated files: they come
    with the intl version in `go.mod`.
 
@@ -225,7 +227,7 @@ Translating with Claude also needs [Claude Code](https://code.claude.com) (`clau
    ```
 
 6. Day to day: `mise run intl:06-gen` before `gsx generate` (make your generate task depend on it), and
-   `mise run intl:04-check` in CI (the workflow `init` wrote runs `mise run intl:verify`). On a pull request (GitHub Actions' `pull_request` runs), `go tool intl check` only
+   `mise run intl:04-check` in CI (the workflow `init` wrote runs `mise run intl:verify`). On a pull request (GitHub Actions' `pull_request` runs), `mise-intl check` only
    reports missing and stale translations, without failing, so a contributor can leave them and you translate them
    after merging; pushes and releases stay strict. `INTL_MISSING=fail` or `warn` (or `--missing`) says otherwise.
 
@@ -235,7 +237,7 @@ Translating with Claude also needs [Claude Code](https://code.claude.com) (`clau
 locales = ["en", "de", "ar"]   # the source first
 catalogs = "locales"
 gsxui = "ui"
-ui = "views/intl"              # where go tool intl add puts intl's screens (the default)
+ui = "views/intl"              # where mise-intl add puts intl's screens (the default)
 badge = "docs/badges/intl.svg" # "languages | 3, all translated": gen writes it, check says when it's stale
 
 [notes]
@@ -255,7 +257,7 @@ made of gsxui components, with their text already translated into intl's 13 lang
 | `preferences` | `<intlui.PreferencesDialog/>` | a header button and the time zone and clock dialog it opens |
 
 ```sh
-go tool intl add language-list language-offer preferences   # or mise run intl:add …
+mise-intl add language-list language-offer preferences   # or mise run intl:add …
 ```
 
 `add` runs `gsxui add` for the components a screen needs that the app doesn't have (Button, Alert, Dialog, Field,
@@ -336,7 +338,7 @@ say:
 `intl:10-translate` runs Claude Code headless with the `intl` skill, one worker per language at once
 (`intl.toml`'s `[translate] workers`, default 6, on `[translate] model`). A worker reads `intl:09-todo --json` for its
 language (each message's source, context and arguments, the plural categories from Intl, the notes from
-`intl.toml`). It may edit only that language's catalog, and it checks its work with `go tool intl check <locale>`
+`intl.toml`). It may edit only that language's catalog, and it checks its work with `mise-intl check <locale>`
 until that passes. Then `gen` and the full `intl:04-check` run once. The skill is in `.claude/skills/intl` and works the same in an
 interactive session ("translate the new messages").
 
@@ -366,24 +368,24 @@ Numbered in the order a repo meets them; each runs the command of its name.
 
 | Task (with mise) | Command (without) | What it does |
 |---|---|---|
-| `mise run intl` | `go tool intl` | What's done, and what to run next |
-| `intl:03-init` | `go tool intl init` | intl's files, as this version writes them |
-| `intl:04-check` | `go tool intl check` | Every problem, for CI (`--missing warn`; or only the languages named) |
-| `intl:05-show` | `go tool intl show` | What's done, and what to run next (`--json`) |
-| `intl:06-gen` | `go tool intl gen` | The catalogs compiled into the app's messages package |
-| `intl:07-status` | `go tool intl status` | Per language: translated, inherited, stale, missing |
-| `intl:08-add-locale` | `go tool intl add-locale` | A language added |
-| `intl:09-todo` | `go tool intl todo` | What's left to translate (`--json`) |
-| `intl:10-translate` | `go tool intl translate` | Claude Code translates it |
-| `intl:11-export` | `go tool intl export` | XLIFF 2.0 for translators (`--all`, `--out`) |
-| `intl:12-import` | `go tool intl import` | Their XLIFF read back |
-| `intl:13-confirm` | `go tool intl confirm` | Stale translations that are still right, kept |
-| `intl:14-prune` | `go tool intl prune` | Keys the source no longer has, removed |
-| `intl:verify` | `go tool intl verify` | What GitHub runs: the repo's setup and test tasks, then check |
-| `intl:template` | `go tool intl template` | The template's little app, in a repo with no app yet |
-| `intl:add` | `go tool intl add` | In a gsx app: intl's screens (`--diff`, `--overwrite`) |
-| `intl:assets` | `go tool intl assets` | The JavaScript a Worker and a page import (`--worker`, `--browser`) |
-| `intl:show-help` | `go tool intl show-help` | Every command |
+| `mise run intl` | `mise-intl` | What's done, and what to run next |
+| `intl:03-init` | `mise-intl init` | intl's files, as this version writes them |
+| `intl:04-check` | `mise-intl check` | Every problem, for CI (`--missing warn`; or only the languages named) |
+| `intl:05-show` | `mise-intl show` | What's done, and what to run next (`--json`) |
+| `intl:06-gen` | `mise-intl gen` | The catalogs compiled into the app's messages package |
+| `intl:07-status` | `mise-intl status` | Per language: translated, inherited, stale, missing |
+| `intl:08-add-locale` | `mise-intl add-locale` | A language added |
+| `intl:09-todo` | `mise-intl todo` | What's left to translate (`--json`) |
+| `intl:10-translate` | `mise-intl translate` | Claude Code translates it |
+| `intl:11-export` | `mise-intl export` | XLIFF 2.0 for translators (`--all`, `--out`) |
+| `intl:12-import` | `mise-intl import` | Their XLIFF read back |
+| `intl:13-confirm` | `mise-intl confirm` | Stale translations that are still right, kept |
+| `intl:14-prune` | `mise-intl prune` | Keys the source no longer has, removed |
+| `intl:verify` | `mise-intl verify` | What GitHub runs: the repo's setup and test tasks, then check |
+| `intl:template` | `mise-intl template` | The template's little app, in a repo with no app yet |
+| `intl:add` | `mise-intl add` | In a gsx app: intl's screens (`--diff`, `--overwrite`) |
+| `intl:assets` | `mise-intl assets` | The JavaScript a Worker and a page import (`--worker`, `--browser`) |
+| `intl:show-help` | `mise-intl show-help` | Every command |
 
 GitHub runs `.github/workflows/intl.yml` on every push: it checks out, installs mise, then runs `mise run intl:verify`.
 Run that task here and you see what GitHub sees.
@@ -398,5 +400,5 @@ Run that task here and you see what GitHub sees.
 | `intl/config` | tools that read an app's `intl.toml` | no |
 | `gsxintl` | gsx apps: `Head`, `HTML`, `Attrs` and the renderer `gsx.toml` names | **yes, the only one** |
 | `gsxintl/filters` | gsx apps' `gsx.toml`: `date`, `number`, `since`, … | no |
-| `gsxintl/registry`, `gsxintl/screens` | `go tool intl add`: intl's screens, and any module's gsx components | no |
-| `cmd/intl` | `go tool intl` | no |
+| `gsxintl/registry`, `gsxintl/screens` | `mise-intl add`: intl's screens, and any module's gsx components | no |
+| `cmd/mise-intl` | `mise-intl` | no |

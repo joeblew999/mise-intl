@@ -1,28 +1,29 @@
 # A release on every change to what intl is (its packages, its command, the files it writes, its skill) merged to
-# main, so go get github.com/joeblew999/mise-intl/cmd/intl@latest always gets what main is. It checks out (with the
-# tags) and installs mise, then runs mise run tool:release, the same as on any machine: the commit's v* tag or the next
-# patch version, the version on proxy.golang.org, and a new repo made the README's way at it and walked. A v* tag on a
-# commit pushed with it releases that version. Shell steps only, as ci.yml.
+# main, so `mise use github:joeblew999/mise-intl` always gets what main is, as mise-cloudflare's release.yml. It checks
+# out (with the tags) and installs mise, then runs mise run tool:release, the same as on any machine: the commit's v*
+# tag or the next patch version, goreleaser's binaries on the tag's GitHub release, where mise's github backend finds
+# them, a new repo set up on the release, and the version on proxy.golang.org (the packages an app imports). A v* tag
+# pushed by hand releases that version. Shell steps only, as ci.yml.
 name: release
 
 on:
   push:
     branches: [main]
-    # Not a test: none changes anything in intl.
-    paths: ["cmd/**", "intl/**", "gsxintl/**", "internal/**", "templates/**", "!**/*_test.go", "go.mod", "go.sum", ".github/workflows/release.yml"]
-  workflow_dispatch:
+    # Not the template's own pin of mise-intl, nor a test: neither changes anything in intl.
+    paths: ["cmd/**", "intl/**", "gsxintl/**", "internal/**", "templates/**", "!templates/.mise/config.toml", "!**/*_test.go", "go.mod", "go.sum", ".goreleaser.yaml", ".github/workflows/release.yml"]
+    tags: ["v*"]
 
 concurrency:
   group: release
   cancel-in-progress: false
 
 permissions:
-  contents: write # the release's tag
+  contents: write # the release and its files
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       MISE_YES: "1"
@@ -35,7 +36,7 @@ jobs:
           git checkout -q --detach "$GITHUB_SHA"
           git log --oneline -1
 
-      - name: mise and Go
+      - name: mise, Go and goreleaser
         run: |
           echo "MISE_TRUSTED_CONFIG_PATHS=$PWD" >> "$GITHUB_ENV"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"

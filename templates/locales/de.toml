@@ -1,4 +1,4 @@
-# de: the translations of en.toml, same tables and keys. go tool intl todo lists what is left.
+# de: the translations of en.toml, same tables and keys. mise-intl todo lists what is left.
 
 [home]
 title = "intl, in Ihrer Sprache"

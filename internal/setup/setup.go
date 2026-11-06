@@ -1,4 +1,4 @@
-// Package setup is go tool intl init: it sets a gsx app up for intl, from its go.mod's directory. Every step leaves
+// Package setup is mise-intl init: it sets a gsx app up for intl, from its go.mod's directory. Every step leaves
 // alone what is already there, so it can run again (after gsxui init, say).
 package setup
 
@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -34,9 +33,6 @@ const (
 // Init writes intl.toml, the catalogs, gsx.toml's filters and renderers, and .gitignore's generated files into the
 // app at root, logging each change.
 func Init(root string, o Options, log io.Writer) error {
-	if GoMod(root) == "" {
-		return errors.New("intl init: run it in a Go module, where the app's go.mod is (go mod init <module> first)")
-	}
 	if len(o.Locales) == 0 || o.Catalogs == "" {
 		return errors.New("intl init: locales and catalogs are required")
 	}
@@ -58,15 +54,15 @@ func Init(root string, o Options, log io.Writer) error {
 	}
 	conf := "# The app's languages (github.com/joeblew999/mise-intl/intl): BCP 47 ids, the source first.\n" +
 		"locales = [" + strings.Join(q, ", ") + "]\n" +
-		"# <locale>.toml per language, ICU MessageFormat; go tool intl gen writes the Go package of messages there.\n" +
+		"# <locale>.toml per language, ICU MessageFormat; mise-intl gen writes the Go package of messages there.\n" +
 		"catalogs = " + `"` + o.Catalogs + `"` + "\n"
 	if o.Gsxui != "" {
 		conf += "# Where gsxui add vendors components: gen translates the text they write themselves from [gsxui].\n" +
 			"gsxui = " + `"` + o.Gsxui + `"` + "\n"
 	}
-	conf += "# Optional: a README badge go tool intl gen keeps current, \"languages | 2, all translated\".\n" +
+	conf += "# Optional: a README badge mise-intl gen keeps current, \"languages | 2, all translated\".\n" +
 		"# badge = \"docs/badges/intl.svg\"\n"
-	conf += "\n# Guidance for whoever translates, people or Claude (go tool intl todo shows it); \"*\" is for every language.\n" +
+	conf += "\n# Guidance for whoever translates, people or Claude (mise-intl todo shows it); \"*\" is for every language.\n" +
 		"[notes]\n\"*\" = \"\"\n"
 	if err := write("intl.toml", conf); err != nil {
 		return err
@@ -85,7 +81,7 @@ func Init(root string, o Options, log io.Writer) error {
 	}
 	for _, id := range o.Locales[1:] {
 		if err := write(filepath.Join(o.Catalogs, id+".toml"),
-			"# "+id+": the translations of "+source+".toml, same tables and keys. go tool intl todo lists what is left.\n"); err != nil {
+			"# "+id+": the translations of "+source+".toml, same tables and keys. mise-intl todo lists what is left.\n"); err != nil {
 			return err
 		}
 	}
@@ -138,17 +134,17 @@ func UsesGsx(root, gsxui string) bool {
 	return err == found
 }
 
-// GoMod is the go.mod of the module root is in, as go reads it: the app's own, or for the template where it is,
-// mise-intl's. "" when root is in none.
+// GoMod is the go.mod of the module root is in, the nearest up from it: the app's own, or for the template where it is,
+// mise-intl's. "" when root is in none. It reads the files, so it needs no Go.
 func GoMod(root string) string {
-	cmd := exec.Command("go", "env", "GOMOD")
-	cmd.Dir = root
-	out, err := cmd.Output()
-	p := strings.TrimSpace(string(out))
-	if err != nil || p == "" || p == os.DevNull {
-		return ""
+	for dir := root; ; dir = filepath.Dir(dir) {
+		if p := filepath.Join(dir, "go.mod"); fileExists(p) {
+			return p
+		}
+		if filepath.Dir(dir) == dir {
+			return ""
+		}
 	}
-	return p
 }
 
 // DetectGsxui is where gsxui vendors components in the app at root (gsxui.json's ui), "" without gsxui.
@@ -170,10 +166,10 @@ func addGsxui(path, dir string, log io.Writer) error {
 	return addKey(path, "gsxui", dir, "Where gsxui add vendors components: gen translates the text they write themselves from [gsxui].", log)
 }
 
-// UI writes ui = dir into the app's intl.toml when it has no ui: where go tool intl add put intl's screens.
+// UI writes ui = dir into the app's intl.toml when it has no ui: where mise-intl add put intl's screens.
 func UI(root, dir string, log io.Writer) error {
 	return addKey(filepath.Join(root, "intl.toml"), "ui", dir,
-		"Where go tool intl add copies intl's screens (package intlui): the language list, the language offer, the time zone\n# and clock dialog.", log)
+		"Where mise-intl add copies intl's screens (package intlui): the language list, the language offer, the time zone\n# and clock dialog.", log)
 }
 
 // addKey writes key = value, below its comment, after intl.toml's catalogs line, unless the file sets key already.
@@ -238,7 +234,7 @@ func TaskIncludes(root, rel string, log io.Writer) error {
 
 // GsxuiRenderer registers the renderer for the text gsxui components write themselves (i18n.T) in gsx.toml, once
 // the app has gsxui's i18n package: gsxui add vendors it with the first component that writes text, and until then
-// gsx would fail on a renderer for a package that isn't there. go tool intl gen calls it every time, so the renderer
+// gsx would fail on a renderer for a package that isn't there. mise-intl gen calls it every time, so the renderer
 // arrives with the package.
 func GsxuiRenderer(root, gsxui string, log io.Writer) error {
 	if gsxui == "" {
@@ -322,7 +318,7 @@ func addToTable(s, name, lines string) string {
 	return s + "[" + name + "]\n" + lines
 }
 
-// gitignore keeps go tool intl gen's output out of git (intl.sum stays in).
+// gitignore keeps mise-intl gen's output out of git (intl.sum stays in).
 func gitignore(path string, log io.Writer) error {
 	b, err := os.ReadFile(path)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -341,7 +337,12 @@ func gitignore(path string, log io.Writer) error {
 	if s != "" && !strings.HasSuffix(s, "\n") {
 		s += "\n"
 	}
-	s += "# go tool intl gen output (mise run intl)\n" + strings.Join(add, "\n") + "\n"
+	s += "# mise-intl gen output (mise run intl)\n" + strings.Join(add, "\n") + "\n"
 	fmt.Fprintln(log, "updated .gitignore:", strings.Join(add, ", "))
 	return os.WriteFile(path, []byte(s), 0o644)
+}
+
+func fileExists(p string) bool {
+	fi, err := os.Stat(p)
+	return err == nil && !fi.IsDir()
 }

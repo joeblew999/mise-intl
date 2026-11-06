@@ -14,7 +14,7 @@ import (
 	"github.com/joeblew999/mise-intl/intl/intltest"
 )
 
-// todo is go tool intl todo (09): what is left to translate, with what a translator needs, for people and agents
+// todo is mise-intl todo (09): what is left to translate, with what a translator needs, for people and agents
 // (--json).
 func todo(args []string) {
 	c := app()
@@ -24,7 +24,7 @@ func todo(args []string) {
 	todoList(c, read(c), *asJSON, f.Args())
 }
 
-// todoLocale is a locale in go tool intl todo -json.
+// todoLocale is a locale in mise-intl todo -json.
 type todoLocale struct {
 	ID      string     `json:"id"`
 	Name    string     `json:"name"`

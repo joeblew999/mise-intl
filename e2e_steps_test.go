@@ -1,6 +1,9 @@
+// The steps: the repo's numbered tasks, in their order, each with its check (TestWalk walks them).
+
 package e2e
 
 import (
+	"cmp"
 	"io"
 	"net"
 	"net/http"
@@ -8,34 +11,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
-	"testing"
 	"time"
 
 	"github.com/joeblew999/mise-check/walk"
 )
-
-// intlWalk is the walk: the template's numbered tasks (templates/.mise/tasks/intl.toml), in their order, through the
-// repo's own mise file, each checked by what a person would see it do; on the template where it is (mise run
-// template:e2e), and on a new repo made exactly as README.md's "Use it in your repo" says (mise run new-repo:e2e). mise-check's
-// walk does the rest.
-var intlWalk = walk.Walk[*walker]{Steps: steps, New: newRepo, Prepare: withGo, Of: func(r walk.Repo) *walker {
-	return &walker{Repo: r, inPlace: os.Getenv("E2E_STAMPED") != "true"}
-}}
-
-func TestWalk(t *testing.T)  { intlWalk.Run(t) }
-func TestSteps(t *testing.T) { walk.CheckSteps(t, "templates/.mise/tasks/intl.toml", steps) }
-
-// walker is intl's walk of a repo: what each step's Check is given. The steps that change the catalogs run on a new
-// repo only, never on the template where it is (inPlace).
-type walker struct {
-	walk.Repo
-	inPlace bool
-}
-
-// newOnly is why a step that changes the catalogs doesn't run on the template where it is.
-const newOnly = "it changes the catalogs, so the walk runs it on a new repo (mise run new-repo:e2e), not on the template"
 
 // steps are the template's numbered tasks, each checked. TestSteps fails unless they're exactly those, in their order.
 var steps = []walk.Step[*walker]{
@@ -67,15 +47,12 @@ var steps = []walk.Step[*walker]{
 			w.T.Fatalf("intl:05-show --json: %+v", s)
 		}
 		w.Pass("intl:05-show says next: %s (without mise: %s)", s.Next, s.Command)
-		// The version is the release the repo was made at (-version), or a checkout's build.
-		want := "(devel)"
-		if *walk.Version != "" {
-			want = strings.TrimPrefix(*walk.Version, "v")
+		// The version is the release .mise/config.toml pins (-version), or this checkout's build (local), Go's own
+		// version of it.
+		if want := strings.TrimPrefix(*walk.Version, "v"); want != "" && s.Version != want || s.Version == "" {
+			w.T.Fatalf("intl:05-show's version is %q, not %q: the one .mise/config.toml pins", s.Version, cmp.Or(want, "this checkout's build"))
 		}
-		if s.Version != want {
-			w.T.Fatalf("intl:05-show's version is %q, not %q: the one go.mod pins", s.Version, want)
-		}
-		w.Pass("intl:05-show's version is the one go.mod pins: %s", s.Version)
+		w.Pass("intl:05-show's version is the one .mise/config.toml pins: %s", s.Version)
 	}},
 	{Task: "intl:06-gen", Check: func(w *walker) {
 		w.MustTask("intl:06-gen")
@@ -250,47 +227,4 @@ func (w *walker) serve(path string) string {
 	}
 	w.T.Fatalf("the app (mise run serve) never answered on %s:\n%s", addr, logs.String())
 	return ""
-}
-
-// intlTool is intl's tool line: the one line of a repo's go.mod that pins its command and its packages.
-const intlTool = "github.com/joeblew999/mise-intl/cmd/intl"
-
-// newRepo is a new repo, made exactly as README.md's "Use it in your repo" says, step by step: an empty folder with its
-// own git, then 1. go mod init, 2. go run …/cmd/intl@<version> init (the release -version names, which pins itself in
-// go.mod), 3. mise run intl:template, 4. mise run intl. Without a version it's this checkout: step 2 becomes go.mod
-// requiring mise-intl and replacing it with this checkout (go mod edit, go mod tidy), then go tool intl init, as a
-// person trying a change does; every other step is the README's.
-func newRepo(r walk.Repo, version string) walk.Repo {
-	n := r.New("intl-new")
-	n.Must("go", "mod", "init", "example.com/intlnew") // 1.
-	at := "this checkout"
-	if version == "" { // 2.
-		n.Must("go", "mod", "edit", "-require=github.com/joeblew999/mise-intl@v0.0.0", "-replace=github.com/joeblew999/mise-intl="+r.Top, "-tool="+intlTool)
-		n.Must("go", "mod", "tidy")
-		n.Must("go", "tool", "intl", "init")
-	} else {
-		n.Must("go", "run", intlTool+"@"+version, "init")
-		b, _ := os.ReadFile(filepath.Join(n.Dir, "go.mod"))
-		if !strings.Contains(string(b), "github.com/joeblew999/mise-intl "+version) || !strings.Contains(string(b), intlTool) {
-			r.T.Fatalf("go run …@%s init didn't pin itself in go.mod:\n%s", version, b)
-		}
-		at = version
-	}
-	n.MustTask("intl:template")                                      // 3.
-	if out := n.MustTask("intl"); !strings.Contains(out, "next: ") { // 4.
-		r.T.Fatalf("mise run intl says nothing to run next:\n%s", out)
-	}
-	n.Pass("%s, made as README.md says: go mod init, intl init at %s (its pin in go.mod), mise run intl:template, mise run intl", n.Name, at)
-	return n
-}
-
-// withGo gives the template, where it is, the Go of the module it's a folder of: it has no go.mod of its own, and the
-// walk cuts mise off from the repo around it, so its own mise files have no Go to give its tasks (go tool intl …);
-// the Go this test runs with is that module's. A new repo has a go.mod of its own, whose Go mise installs.
-func withGo(r walk.Repo) walk.Repo {
-	if _, err := os.Stat(filepath.Join(r.Dir, "go.mod")); err == nil {
-		return r
-	}
-	r.With = append(r.With, "MISE_GO_VERSION="+strings.TrimPrefix(runtime.Version(), "go"))
-	return r
 }

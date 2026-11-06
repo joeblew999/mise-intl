@@ -9,7 +9,7 @@ import (
 )
 
 // TestStart: what an ordinary Go server gets: intl formats through workerd's Intl, with the app's catalogs (here one
-// message compiled the way go tool intl gen writes them), and stop ends it.
+// message compiled the way mise-intl gen writes them), and stop ends it.
 func TestStart(t *testing.T) {
 	shipped := intl.Locales{intl.NewLocale("en"), intl.NewLocale("de")}
 	intl.Use(shipped, []bool{true, true})

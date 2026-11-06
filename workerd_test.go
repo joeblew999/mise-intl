@@ -9,7 +9,7 @@ import (
 	"github.com/joeblew999/mise-intl/intl/workerd"
 )
 
-// TestWorkerdPins: the template's package.json (the app's own, which go tool intl template writes) pins the workerd
+// TestWorkerdPins: the template's package.json (the app's own, which mise-intl template writes) pins the workerd
 // intl is tested with, intl/workerd's Version, and its lockfile has it.
 func TestWorkerdPins(t *testing.T) {
 	b, err := os.ReadFile("templates/package.json")

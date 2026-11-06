@@ -1,23 +1,27 @@
-# mise-intl's own tasks, only for working on mise-intl itself: run them here, at the top. A repo that uses intl never
-# gets this file, nor needs mise at all: it gets intl from this Go module (go get -tool …/cmd/intl), and go tool intl
-# init writes the template's tool files into it, templates/'s. Each task is named for what it acts on (noun:verb):
+# mise-intl's own tasks, for working on it. Run every task here, at the top: everything is driven from this file, as
+# mise-cloudflare's root is. The steps a person takes are a repo's own numbered tasks (intl:03-init to 14-prune, in its
+# .mise/tasks). The walk (TestWalk, walk_test.go) runs them in order, on the template or on a new repo made from it.
+# This file is only what the root does itself, each task named for what it acts on (noun:verb):
 #   template: the template, templates/, a whole repo that runs where it is
 #     mise run template:setup        its own setup task: workerd from its package.json, in templates/node_modules
 #     mise run template:gen          its messages package, which the module's own build and tests need (gen there)
 #     mise run template:e2e          TestWalk on it: its numbered tasks in their order, through its own mise file, each checked
-#     mise run template:check-mise   misecheck on its tasks file against go tool intl's Go, and against the walk
-#   new-repo: a new repo, made from nothing as docs/intl/README.md says, by the walk and gone after it
-#     mise run new-repo:e2e          TestWalk on it, made the README's way, at this checkout or the release --version names
-#   tool: intl itself, its packages and its command
-#     mise run tool:test             go vet, and every Go test but the walk's
-#     mise run tool:release          a release: the commit's tag or the next patch, the Go proxy, a new repo walked at it
+#     mise run template:check-mise   misecheck on its tasks file against mise-intl's Go, and against the walk
+#   new-repo: a new repo, made as a person makes one (mise-intl init, then intl:template), by the walk and gone after it
+#     mise run new-repo:e2e          TestWalk on it, at this checkout's build (local) or the release --version names
+#   tool: mise-intl itself, its command and its packages
+#     mise run tool:build            its build, bin/mise-intl (.exe on Windows)
+#     mise run tool:install          that build as the mise version local, the template's on this machine (and any repo's)
+#     mise run tool:test             go vet, every Go test but the walk's, and the release config
+#     mise run tool:release          a release from the commit checked out, as release.yml runs it (--dry-run)
 #   root: this file
 #     mise run root:check-mise       misecheck on this very file
+# Each runs what it needs first: run the furthest you need.
 
 [settings]
 # go.mod's toolchain line is the Go pin; this makes mise install honour it.
 idiomatic_version_file_enable_tools = ["go"]
-# mise 2026.10 fails to install aube while it fetches its agent skill (a 404); it isn't needed.
+# mise 2026.10 fails to install aube and usage while it fetches their agent skills (a 404); they aren't needed.
 skills.fetch = false
 
 [tools]
@@ -25,53 +29,65 @@ skills.fetch = false
 # wrangler (template:setup)
 node = "26.13.0"
 aube = { version = "2.8.4", workflow = ["release-plz.yml@refs/heads/main", "release.yml@refs/heads/main"] }
+usage = { version = "7.1.3", workflow = "publish-cli.yml" }    # --help and tab-completion for the tasks' flags
+goreleaser = "2.19.0"   # the release's binaries (.goreleaser.yaml)
 
 [env]
-# intl's Intl outside a Worker, for this repo's go test and go tool intl: the template's workerd (intl/workerd finds
-# its native binary from this .bin)
+# intl's Intl outside a Worker, for this repo's go test: the template's workerd (intl/workerd finds its native binary
+# from this .bin)
 _.path = ["{{config_root}}/templates/node_modules/.bin"]
 
 [tasks."template:setup"]
-description = "The template's own setup, by its own task (mise run setup, in templates/; its Go is this module's, go.mod's toolchain line): workerd from its package.json in templates/node_modules (aube install), the one intl's Intl runs on in this repo's tests, go tool intl and the walk"
+description = "The template's own setup, by its own task (mise run setup, in templates/; its Go is this module's, go.mod's toolchain line): workerd from its package.json in templates/node_modules (aube install), the one intl's Intl runs on in this repo's tests and the walk. The machine's .mise/config.local.toml ignored, and the template's pin of mise-intl, which its setup doesn't run (so it works before mise-intl's first release)"
 dir = "{{config_root}}/templates"
+env = { MISE_IGNORED_CONFIG_PATHS = "{{config_root}}/templates/.mise/config.local.toml", MISE_DISABLE_TOOLS = "github:joeblew999/mise-intl" }
 run = "mise run setup"
 
 [tasks."template:gen"]
-description = "The template's messages package (templates/locales/intl_gen.go), which go vet and go test of this module need: go tool intl gen, in the template"
+description = "The template's messages package (templates/locales/intl_gen.go), which go vet and go test of this module need: mise-intl gen, this checkout's, in the template"
 depends = ["template:setup"]
 dir = "{{config_root}}/templates"
-run = "go tool intl gen"
+run = "go run ../cmd/mise-intl gen"
 
 [tasks."template:e2e"]
-description = "TestWalk on the template, templates/, where it is: its numbered tasks (intl:03-init to 14-prune) in their order, through its own mise file, each checked by what a person would see it do (walk_test.go); the ones that change the catalogs run on a new repo"
-depends = ["template:gen"]
+description = "TestWalk on the template, templates/, where it is: its numbered tasks (intl:03-init to 14-prune) in their order, through its own mise file, each checked by what a person would see it do (walk_test.go); the ones that change the catalogs run on a new repo. After tool:install"
+depends = ["template:gen", "tool:install"]
 env = { REPO_PATH = "templates" }
 run = 'go test . -run "^TestWalk$" -count=1 -v -timeout 15m'
 
 [tasks."template:check-mise"]
-description = "misecheck on the template's tasks file, both ways: against go tool intl's Go (each task's command is its file, each command file is a task's, each flag on both sides) and against the walk that runs them"
-env = { MISE_FILE = "templates/.mise/tasks/intl.toml", GO_CMD = "cmd", GO_LAYOUT = "file", GO_CALLERS = "." }
+description = "misecheck on the template's tasks file, both ways: against mise-intl's Go (each task's command is its file, each command file is a task's, each flag on both sides) and against the walk that runs them"
+env = { MISE_FILE = "templates/.mise/tasks/mise-intl.toml", GO_CMD = "cmd", GO_LAYOUT = "file", GO_CALLERS = "." }
 run = 'go test . -run "^TestMise$" -count=1 -v'
 
 [tasks."new-repo:e2e"]
-description = "TestWalk on a new repo, made from nothing as docs/intl/README.md says (an empty folder with its own git, go mod init, intl's tool line, go tool intl init, intl:template), at this checkout or at the release --version names; every numbered task, the ones that change the catalogs too; gone after it"
-usage = 'flag "--version <version>" help="the release to make it at, v0.1.0 (default this checkout)"'
-depends = ["template:gen"]
+description = "TestWalk on a new repo, made as a person makes one (an empty folder with its own git, mise-intl init, then its own intl:template: the template's app, its go.mod named for the folder), in a folder of its own that goes when the walk ends; every numbered task, the ones that change the catalogs too. It pins this checkout's build (local, its go.mod using this checkout's packages), or a release with --version, as the release tries it. After tool:install"
+usage = 'flag "--version <version>" help="pin this release of mise-intl from GitHub, as mise use does, instead of the build of this checkout"'
+depends = ["template:gen", "tool:install"]
 env = { REPO_PATH = "templates", E2E_STAMPED = "true" }
 run = 'go test . -run "^TestWalk$" -count=1 -v -timeout 15m{% if usage.version %} -args -version "{{usage.version}}"{% endif %}'
 
+[tasks."tool:build"]
+description = "This repo's build, bin/mise-intl (mise-intl.exe on Windows: go build names it for the OS)"
+run = "go build -o bin/ ./cmd/mise-intl"
+
+[tasks."tool:install"]
+description = "This repo's build as the mise version local, for any repo on this machine, no release: mise use github:joeblew999/mise-intl@local there. The template pins a release in .mise/config.toml; this writes templates/.mise/config.local.toml, never committed, so the template runs this build here"
+depends = ["tool:build"]
+run = "mise link -f github:joeblew999/mise-intl@local {{config_root}}/bin && mise use -q --path {{config_root}}/templates/.mise/config.local.toml github:joeblew999/mise-intl@local"
+
 [tasks."tool:test"]
-description = "go vet, and every Go test, run for real (no cached results): the walk's skip without REPO_PATH, so they need nothing but this file's tools; Intl comes from the template's workerd (template:setup)"
+description = "go vet, every Go test, run for real (no cached results), and the release config: the walk's skip without REPO_PATH, so they need nothing but this file's tools; Intl comes from the template's workerd (template:setup)"
 depends = ["template:gen"]
-run = 'go vet ./... && go test -count=1 ./...'
+run = "go vet ./... && go test -count=1 ./... && goreleaser check"
 
 [tasks."tool:release"]
-description = "A release of intl from the commit checked out, as release.yml runs it on GitHub: the commit's v* tag, or the next patch version, tagged and pushed; the version fetched by proxy.golang.org, so go get has it at once; then a new repo made the README's way at it and walked (new-repo:e2e --version). intl is one Go module, so the tag is the whole release. --dry-run tags and publishes nothing"
-usage = 'flag "--dry-run" help="tag and publish nothing: say what it would release"'
+description = "A release of mise-intl from the commit checked out, as release.yml runs it on GitHub: the commit's v* tag, or the next patch version tagged and pushed; goreleaser's binaries on that tag's release; a new repo made pinning it and walked (new-repo:e2e --version); the version on proxy.golang.org (the packages an app imports). --dry-run tags and publishes nothing (a goreleaser snapshot into dist/). After tool:test"
+usage = 'flag "--dry-run" help="tag and publish nothing: goreleaser builds a snapshot into dist/"'
 depends = ["tool:test"]
 run = 'go test . -run "^TestToolRelease$" -count=1 -v -timeout 30m{% if usage.dry_run %} -args -dry-run{% endif %}'
 
 [tasks."root:check-mise"]
-description = "misecheck on this very file: each task one line, its Go there, its usage passed by name, no POSIX shell syntax"
+description = "TestMise on this repo's own mise.toml, the mise side: each task one line, the Go it runs there, its usage passed by name, no POSIX shell syntax, so every task here runs on Windows too. Not the Go side: the root runs Go, it isn't a binary's tasks (mise_test.go)"
 env = { MISE_FILE = "mise.toml" }
 run = 'go test . -run "^TestMise$" -count=1 -v'

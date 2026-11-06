@@ -13,12 +13,12 @@ import (
 	"testing"
 )
 
-// TestToolRelease: mise run tool:release releases intl from the commit checked out (release.yml runs the same on
-// GitHub): the commit's v* tag, or the next patch version, tagged and pushed when it has none; the version fetched by
-// proxy.golang.org, so go get has it at once; and a new repo made at the release the README's way and walked (mise run
-// new-repo:e2e --version). intl is one Go module, its command built from its source by go tool, so the tag is the
-// whole release: there's no binary to build or publish. With --dry-run (the test's flag -dry-run) it tags and
-// publishes nothing.
+// TestToolRelease: mise run tool:release releases mise-intl from the commit checked out (release.yml runs the
+// same on GitHub): the commit's v* tag, or the next patch version, tagged and pushed, when it has none; goreleaser's
+// binaries for every machine on that tag's GitHub release (.goreleaser.yaml); a new repo pinning the release, tried as a
+// person tries it (mise run new-repo:e2e --version: the walk on a new repo made pinning it); and the version fetched by
+// proxy.golang.org, so go get and pkg.go.dev have it at once. With --dry-run (the test's flag -dry-run) it tags and
+// publishes nothing: goreleaser builds a snapshot into dist/.
 func TestToolRelease(t *testing.T) {
 	onlyFrom(t, "tool:release")
 	tag, isNew, err := releaseTag()
@@ -26,7 +26,9 @@ func TestToolRelease(t *testing.T) {
 		t.Fatal(err)
 	}
 	if *dryRunFlag {
-		fmt.Printf("· would release %s%s\n· dry run: nothing tagged, nothing published\n", tag, map[bool]string{true: " (a new tag on this commit)", false: " (this commit's tag)"}[isNew])
+		fmt.Printf("· would release %s%s\n", tag, map[bool]string{true: " (a new tag on this commit)", false: " (this commit's tag)"}[isNew])
+		runShown(t, nil, "goreleaser", "release", "--snapshot", "--clean")
+		fmt.Println("· dry run: nothing tagged, nothing published")
 		return
 	}
 	if isNew {
@@ -38,12 +40,17 @@ func TestToolRelease(t *testing.T) {
 		runShown(t, nil, "git", "push", "-q", "origin", tag)
 		fmt.Println("tagged", tag)
 	}
-	runShown(t, []string{"GOPROXY=https://proxy.golang.org", "GOFLAGS=-mod=mod"}, "go", "list", "-m", "github.com/joeblew999/mise-intl@"+tag)
+	runShown(t, []string{"GORELEASER_CURRENT_TAG=" + tag}, "goreleaser", "release", "--clean")
 	runShown(t, nil, "mise", "run", "new-repo:e2e", "--version", tag)
+	out, err := exec.Command("go", "list", "-m").Output()
+	if err != nil {
+		t.Fatalf("go list -m: %v", err)
+	}
+	runShown(t, []string{"GOPROXY=https://proxy.golang.org", "GOFLAGS=-mod=mod"}, "go", "list", "-m", strings.TrimSpace(string(out))+"@"+tag)
 }
 
 // dryRunFlag is mise run tool:release --dry-run, passed as the test's flag (go test … -args -dry-run).
-var dryRunFlag = flag.Bool("dry-run", false, "tag nothing and publish nothing")
+var dryRunFlag = flag.Bool("dry-run", false, "tag nothing and publish nothing: goreleaser builds a snapshot into dist/")
 
 // releaseTag is the tag to release: the commit's own v* tag, or the next patch version after the newest v* tag (v0.0.1
 // for the first), which is new.

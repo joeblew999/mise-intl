@@ -1,6 +1,6 @@
 ---
 name: intl
-description: Use when writing or translating what a reader of a Go app sees (gsx or not), with github.com/joeblew999/mise-intl/intl — adding or changing text (messages in the source catalog), writing them, dates, numbers and other formats in markup, after `gsxui add`, when `go tool intl status` or `check` reports missing or stale translations, when adding a language, or when asked to translate or review translations.
+description: Use when writing or translating what a reader of a Go app sees (gsx or not), with github.com/joeblew999/mise-intl/intl — adding or changing text (messages in the source catalog), writing them, dates, numbers and other formats in markup, after `gsxui add`, when `mise-intl status` or `check` reports missing or stale translations, when adding a language, or when asked to translate or review translations.
 ---
 
 # Text, formats and translations with intl
@@ -9,7 +9,7 @@ description: Use when writing or translating what a reader of a Go app sees (gsx
 
 Every word a reader sees is a message in the source catalog (`<catalogs>/<source>.toml`, ICU MessageFormat), never a
 literal in markup or Go. Add the key under its table with a comment saying where it appears (translators get it as
-context), then `go tool intl gen`:
+context), then `mise-intl gen`:
 
 ```toml
 [shop]
@@ -37,14 +37,14 @@ runtime's Intl does it. A new or changed message is translated in the same chang
 
 The app's languages are in `intl.toml` (the source locale first); each has a catalog, `<catalogs>/<locale>.toml`, in
 ICU MessageFormat. Run every command from the app's root. With mise, each is a numbered task too
-(`mise run intl:06-gen` runs `go tool intl gen`; `mise run intl:show-help` lists them), and the repo's
+(`mise run intl:06-gen` runs `mise-intl gen`; `mise run intl:show-help` lists them), and the repo's
 `docs/intl/README.md` has everything else. In a gsx app, the components, the renderer and the filters are
 `github.com/joeblew999/mise-intl/gsxintl`.
 
 ### 1. See what to translate
 
 ```sh
-go tool intl todo -json
+mise-intl todo -json
 ```
 
 It is `{"source": "<source locale>", "locales": [ … ]}`, one entry for each other locale:
@@ -70,7 +70,7 @@ Nothing in `todo` means nothing to do.
   that language expect from software (`gsxui.*` keys are the text UI components write themselves: Close, Next,
   Previous, More pages).
 - A `stale` message: compare `translation` with the new `source`. Update it, or, when it is still right, keep it:
-  `go tool intl confirm <locale>:<key>`.
+  `mise-intl confirm <locale>:<key>`.
 
 ### 3. Write them
 
@@ -81,12 +81,12 @@ Never edit the source catalog's text, `intl.sum`, or generated files (`intl_gen.
 
 ### 4. Check
 
-When you were asked to translate one locale while others are translated at the same time (`go tool intl
-translate`), edit only that locale's file, never run `go tool intl gen`, and check with `go tool intl check <locale>`,
+When you were asked to translate one locale while others are translated at the same time (`mise-intl
+translate`), edit only that locale's file, never run `mise-intl gen`, and check with `mise-intl check <locale>`,
 which writes nothing. Otherwise:
 
 ```sh
-go tool intl gen && go tool intl check
+mise-intl gen && mise-intl check
 ```
 
 `check` names every problem: a syntax error, an argument the source doesn't have, a plural without a category the
@@ -95,16 +95,16 @@ how many messages you translated and confirmed.
 
 ## Other tasks
 
-- **Add a language:** `go tool intl add-locale fr-CA` (it checks the id with Intl, adds it to `intl.toml`'s
+- **Add a language:** `mise-intl add-locale fr-CA` (it checks the id with Intl, adds it to `intl.toml`'s
   `locales` and writes its catalog), then translate everything `todo` lists for it. A regional locale can take what it doesn't
   translate from another of the same script: `[inherit] fr-CA = "fr"` in `intl.toml`.
 - **A language list, the offer of the page in the reader's language, or a time zone and clock dialog:** don't write
-  them; `go tool intl add language-list language-offer preferences` copies intl's own (gsx files in `views/intl`,
+  them; `mise-intl add language-list language-offer preferences` copies intl's own (gsx files in `views/intl`,
   package `intlui`, made of gsxui components) and writes their text, already translated, into the catalogs under
   `[intl]`. It prints where each goes. A language intl doesn't ship: translate what `todo` lists for it.
-- **After `gsxui add`:** `go tool intl gen` names each text the new components write that has no message, with the
+- **After `gsxui add`:** `mise-intl gen` names each text the new components write that has no message, with the
   line to add to the source catalog's `[gsxui]` table. Add those lines, then translate them.
 - **Review:** read each catalog beside the source and fix what reads wrong for a native speaker; then step 4.
-- **Human translators:** `go tool intl export` writes XLIFF 2.0 per locale into `xliff/out`; their files go in
-  `xliff/in`, and `go tool intl import` reads them back.
-- **A key the source no longer has:** `go tool intl check` names it; `go tool intl prune` removes it everywhere.
+- **Human translators:** `mise-intl export` writes XLIFF 2.0 per locale into `xliff/out`; their files go in
+  `xliff/in`, and `mise-intl import` reads them back.
+- **A key the source no longer has:** `mise-intl check` names it; `mise-intl prune` removes it everywhere.

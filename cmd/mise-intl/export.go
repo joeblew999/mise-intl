@@ -10,7 +10,7 @@ import (
 	"github.com/joeblew999/mise-intl/intl/intltest"
 )
 
-// export is go tool intl export [--all] [--out dir] [locale…] (11): XLIFF 2.0 for translators, what is left (or
+// export is mise-intl export [--all] [--out dir] [locale…] (11): XLIFF 2.0 for translators, what is left (or
 // everything), into xliff/out (intl.toml's xliff).
 func export(args []string) {
 	c := app()

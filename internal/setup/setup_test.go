@@ -63,7 +63,7 @@ func TestInitFresh(t *testing.T) {
 		g.Renderers["example.com/shop/ui/i18n.T"] != "" {
 		t.Errorf("gsx.toml before gsxui's i18n: %+v", g)
 	}
-	// gsxui add vendors ui/i18n with the first component that writes text; the next go tool intl gen registers it.
+	// gsxui add vendors ui/i18n with the first component that writes text; the next mise-intl gen registers it.
 	if err := os.MkdirAll(filepath.Join(root, "ui", "i18n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func TestInitFresh(t *testing.T) {
 	if s := read(t, root, ".gitignore"); !strings.Contains(s, "\nintl_gen.go\nintl_messages_gen.go\nintl-messages.mjs\n") {
 		t.Errorf(".gitignore:\n%s", s)
 	}
-	// No mise.toml: Go's version for mise is the app's own (the template's app has it, go tool intl template), and
+	// No mise.toml: Go's version for mise is the app's own (the template's app has it, mise-intl template), and
 	// intl fetches the workerd it pins itself (intl/workerd.Path), so an app needs only its module.
 	if _, err := os.Stat(filepath.Join(root, "mise.toml")); err == nil {
 		t.Errorf("init wrote mise.toml:\n%s", read(t, root, "mise.toml"))
@@ -181,7 +181,7 @@ func TestInitAgain(t *testing.T) {
 func TestTaskIncludes(t *testing.T) {
 	root := app(t, map[string]string{"mise.toml": "[tools]\ngo = \"1.27\"\n\n[task_config]\nincludes = [\"tasks/app.toml\"]\n"})
 	for range 2 {
-		if err := setup.TaskIncludes(root, ".mise/tasks/intl.toml", io.Discard); err != nil {
+		if err := setup.TaskIncludes(root, ".mise/tasks/mise-intl.toml", io.Discard); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -191,14 +191,14 @@ func TestTaskIncludes(t *testing.T) {
 	if _, err := toml.Decode(read(t, root, "mise.toml"), &m); err != nil {
 		t.Fatal(err)
 	}
-	if want := []string{".mise/tasks/intl.toml", "tasks/app.toml"}; !slices.Equal(m.TaskConfig.Includes, want) {
+	if want := []string{".mise/tasks/mise-intl.toml", "tasks/app.toml"}; !slices.Equal(m.TaskConfig.Includes, want) {
 		t.Errorf("includes = %q, want %q", m.TaskConfig.Includes, want)
 	}
 
 	// intl's tasks already listed from another file (this repo lists intl/mise/tasks.toml): no second copy.
 	listed := app(t, map[string]string{"mise.toml": "[task_config]\nincludes = [\"intl/mise/tasks.toml\"]\n",
-		"intl/mise/tasks.toml": "[\"intl:check\"]\nrun = \"go tool intl check\"\n"})
-	if err := setup.TaskIncludes(listed, ".mise/tasks/intl.toml", io.Discard); err != nil {
+		"intl/mise/tasks.toml": "[\"intl:check\"]\nrun = \"mise-intl check\"\n"})
+	if err := setup.TaskIncludes(listed, ".mise/tasks/mise-intl.toml", io.Discard); err != nil {
 		t.Fatal(err)
 	}
 	if s := read(t, listed, "mise.toml"); strings.Contains(s, ".mise/tasks") {
@@ -206,7 +206,7 @@ func TestTaskIncludes(t *testing.T) {
 	}
 
 	plain := app(t, map[string]string{"mise.toml": "[tools]\ngo = \"1.27\"\n"})
-	if err := setup.TaskIncludes(plain, ".mise/tasks/intl.toml", io.Discard); err != nil {
+	if err := setup.TaskIncludes(plain, ".mise/tasks/mise-intl.toml", io.Discard); err != nil {
 		t.Fatal(err)
 	}
 	if s := read(t, plain, "mise.toml"); s != "[tools]\ngo = \"1.27\"\n" {

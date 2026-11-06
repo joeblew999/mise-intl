@@ -1,5 +1,6 @@
-# mise-intl's CI: its tests, misecheck on both its mise files, and the walk on the template and on a new repo, on
-# Linux, macOS and Windows side by side. Shell steps only, as mise-cloudflare's and mise-check's: no JavaScript actions.
+# mise-intl's CI: every check, on the template (templates) and on a new repo made from it (made by the walk), on Linux,
+# macOS and Windows side by side, so a problem on one shows before a release (which never waits for CI).
+# Shell steps only, as mise-cloudflare's: no JavaScript actions.
 name: ci
 
 on:
@@ -23,7 +24,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 20
     defaults:
       run:
         shell: bash # these steps are the workflow's own; mise runs the tasks in each OS's own shell
@@ -56,13 +57,15 @@ jobs:
           mise --version
           mise install
 
-      - name: Its tests, and misecheck on both its mise files (mise run tool:test, root:check-mise, template:check-mise)
+      - name: The tool's own tests (mise run tool:test, after template:setup, whose workerd they run Intl on), and the mise files and the Go lined up, the template's and this repo's (mise run template:check-mise, root:check-mise)
         run: |
+          mise run template:setup
           mise run tool:test
-          mise run root:check-mise
           mise run template:check-mise
+          mise run root:check-mise
 
-      - name: The walk on the template, and on a new repo made from nothing (mise run template:e2e, new-repo:e2e)
-        run: |
-          mise run template:e2e
-          mise run new-repo:e2e
+      - name: The template, templates - the walk, its numbered tasks in their order, what its own workflow runs included (mise run template:e2e)
+        run: mise run template:e2e
+
+      - name: A new repo made as a person makes one - the same walk, on it (mise run new-repo:e2e)
+        run: mise run new-repo:e2e

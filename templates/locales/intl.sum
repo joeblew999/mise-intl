@@ -1,4 +1,4 @@
-# intl.sum: the source text each translation was made from (go tool intl gen writes it: commit it, don't edit it).
+# intl.sum: the source text each translation was made from (mise-intl gen writes it: commit it, don't edit it).
 de home.intro d9595c0d69ef 62e425851a8f
 de home.languages 68c2743b0f3e d340faff4924
 de home.read f5dc73dfa860 4a798700341e

@@ -1,4 +1,4 @@
-# Written by go tool intl init: don't edit it. go tool intl init writes it again after upgrading.
+# Written by mise-intl init: don't edit it. mise-intl init writes it again after upgrading.
 # Checks the repo on every push and pull request: it checks out, installs mise and the Go that go.mod names, then runs
 # mise run intl:verify (the repo's setup and test tasks if it has them, then check), the same as on any machine.
 # Shell steps only: no JavaScript actions.

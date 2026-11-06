@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-// status is go tool intl status (07): per locale, translated, inherited, stale, missing; exit 1 if one is incomplete.
+// status is mise-intl status (07): per locale, translated, inherited, stale, missing; exit 1 if one is incomplete.
 func status(args []string) {
 	c := app()
 	p := read(c)
@@ -15,7 +15,7 @@ func status(args []string) {
 		ok = ok && l.Current() && len(l.Obsolete) == 0
 	}
 	if !ok {
-		fmt.Println("go tool intl todo lists what is left")
+		fmt.Println("mise-intl todo lists what is left")
 		os.Exit(1)
 	}
 }

@@ -4,7 +4,7 @@
 //
 //	func TestMain(m *testing.M) { os.Exit(intltest.Main(m)) }
 //
-// workerd must be on PATH (mise installs it); the catalogs are the ones go tool intl gen wrote, found through the
+// workerd must be on PATH (mise installs it); the catalogs are the ones mise-intl gen wrote, found through the
 // app's intl.toml (none without one).
 package intltest
 
@@ -45,7 +45,7 @@ func Start() (stop func(), err error) {
 	return workerd.Start(catalogs)
 }
 
-// StartIntl starts workerd's Intl without the app's catalogs (go tool intl, before they are compiled).
+// StartIntl starts workerd's Intl without the app's catalogs (mise-intl, before they are compiled).
 func StartIntl() (stop func(), err error) { return workerd.Start([]byte("export default {};\n")) }
 
 // Plurals checks that every plural and selectordinal in the app's catalogs has a case for each category its
@@ -122,12 +122,12 @@ func PluralProblems(p *catalog.Project) ([]string, error) {
 func readCatalogs(c config.Config) ([]byte, error) {
 	b, err := os.ReadFile(filepath.Join(c.CatalogDir(), "intl-messages.mjs"))
 	if err != nil {
-		return nil, fmt.Errorf("%w: run go tool intl gen", err)
+		return nil, fmt.Errorf("%w: run mise-intl gen", err)
 	}
 	return b, nil
 }
 
-// Tree formats a message tree as go tool intl gen writes it (js/intl.mjs message) in lang with args.
+// Tree formats a message tree as mise-intl gen writes it (js/intl.mjs message) in lang with args.
 func Tree(lang string, tree json.RawMessage, args ...string) (string, error) {
 	return workerd.Tree(lang, tree, args...)
 }
