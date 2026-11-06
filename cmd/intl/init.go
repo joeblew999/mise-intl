@@ -2,12 +2,14 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/joeblew999/mise-intl/internal/setup"
@@ -16,10 +18,12 @@ import (
 )
 
 // theirs are the template's files a repo may have of its own already: init writes them only when it has none.
-var theirs = map[string]bool{".gitignore": true, ".claude/settings.json": true, ".mise/config.toml": true}
+var theirs = map[string]bool{".gitignore": true, ".claude/settings.json": true}
 
-// initRepo is go tool intl init (03): the repo set up for intl, in its Go module. First the template's tool files
-// (templates.Tool: the numbered tasks, Go's version for mise, the GitHub workflow, the Claude Code hook and skill, the
+// initRepo is go tool intl init (03): the repo set up for intl, in its Go module. Run as a release (go run
+// github.com/joeblew999/mise-intl/cmd/intl@latest init, the README's way), it pins itself first: intl's tool line in
+// go.mod at exactly that release (pinSelf), so go tool intl is that release from then on. Then the template's tool files
+// (templates.Tool: the numbered tasks, the GitHub workflow, the Claude Code hook and skill, the
 // docs), each at its path; then the repo's own (setup.Init): intl.toml with its languages (--locales en,de), the
 // catalogs (--catalogs locales), and in a gsx app gsx.toml's filters and renderers; then gen. Every step leaves alone
 // what is the repo's, so it runs again after upgrading: the files that are intl's are written as this version writes
@@ -39,9 +43,9 @@ func initRepo(args []string) {
 	if o.Gsxui == "" {
 		o.Gsxui = setup.DetectGsxui(root) // gsxui set up since: intl.toml gets it
 	}
+	pinSelf(root)
 	writeTool(root)
 	must(setup.Init(root, o, os.Stdout))
-	trustConfig(root, ".mise/config.toml")
 	c, err := config.Find(root)
 	must(err)
 	must(read(c).Generate(os.Stderr))
@@ -112,4 +116,77 @@ func trustConfig(root, file string) {
 	if out, err := exec.Command("mise", "trust", "-q", path).CombinedOutput(); err != nil {
 		fmt.Printf("mise didn't trust %s (%v %s): run mise trust %s\n", file, err, strings.TrimSpace(string(out)), file)
 	}
+}
+
+// intlModule and intlTool are intl's module and its tool line: the one line of a repo's go.mod that pins its command
+// and its packages.
+const (
+	intlModule = "github.com/joeblew999/mise-intl"
+	intlTool   = intlModule + "/cmd/intl"
+)
+
+// pinSelf pins this release of intl in the repo's go.mod (go get -tool …@vX.Y.Z), as mise-cloudflare's init pins
+// itself in .mise/config.toml: run by hand at a newer release than the repo pins, init is the move to it. A go.mod that
+// pins this release or a newer one, or replaces the module with a folder, stays as it is, and so does every go.mod
+// when this is a checkout's build.
+func pinSelf(root string) {
+	gomod := setup.GoMod(root)
+	if gomod == "" {
+		fail(errors.New("intl init: run it in a Go module, where the app's go.mod is (go mod init <module> first)"))
+	}
+	b, err := os.ReadFile(gomod)
+	must(err)
+	text, at := string(b), buildVersion()
+	pinned, replaced := requiredVersion(text, intlModule), strings.Contains(text, intlModule+" =>")
+	switch {
+	case at == "(devel)" || replaced:
+		if !hasToolLine(text, intlTool) {
+			fmt.Println("· this is a checkout's build of intl: pin a release yourself, go get -tool " + intlTool + "@latest")
+		}
+		return
+	case pinned != "" && hasToolLine(text, intlTool) && !olderVersion(strings.TrimPrefix(pinned, "v"), at):
+		fmt.Printf("✓ go.mod pins intl %s (go tool intl)\n", strings.TrimPrefix(pinned, "v"))
+		return
+	}
+	cmd := exec.Command("go", "get", "-tool", intlTool+"@v"+at)
+	cmd.Dir, cmd.Stdout, cmd.Stderr = filepath.Dir(gomod), os.Stdout, os.Stderr
+	must(cmd.Run())
+	fmt.Printf("✓ go.mod pins intl %s: go tool intl from now on\n", at)
+}
+
+// requiredVersion is the version a go.mod's text requires of module, "" if it doesn't.
+func requiredVersion(text, module string) string {
+	for _, line := range strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n") {
+		f := strings.Fields(strings.TrimPrefix(strings.TrimSpace(line), "require "))
+		if len(f) >= 2 && f[0] == module && strings.HasPrefix(f[1], "v") {
+			return f[1]
+		}
+	}
+	return ""
+}
+
+// hasToolLine reports whether a go.mod's text has the tool line for tool, in a tool block or on its own.
+func hasToolLine(text, tool string) bool {
+	for _, line := range strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n") {
+		if f := strings.Fields(strings.TrimPrefix(strings.TrimSpace(line), "tool ")); len(f) == 1 && f[0] == tool {
+			return true
+		}
+	}
+	return false
+}
+
+// olderVersion reports whether release a is older than release b, both x.y.z.
+func olderVersion(a, b string) bool {
+	pa, pb := strings.Split(a, "."), strings.Split(b, ".")
+	for i := 0; i < len(pa) && i < len(pb); i++ {
+		x, errx := strconv.Atoi(pa[i])
+		y, erry := strconv.Atoi(pb[i])
+		if errx != nil || erry != nil {
+			return false
+		}
+		if x != y {
+			return x < y
+		}
+	}
+	return len(pa) < len(pb)
 }

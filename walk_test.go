@@ -18,7 +18,7 @@ import (
 
 // intlWalk is the walk: the template's numbered tasks (templates/.mise/tasks/intl.toml), in their order, through the
 // repo's own mise file, each checked by what a person would see it do; on the template where it is (mise run
-// template:e2e), and on a new repo made from nothing as docs/intl/README.md says (mise run new-repo:e2e). mise-check's
+// template:e2e), and on a new repo made exactly as README.md's "Use it in your repo" says (mise run new-repo:e2e). mise-check's
 // walk does the rest.
 var intlWalk = walk.Walk[*walker]{Steps: steps, New: newRepo, Prepare: withGo, Of: func(r walk.Repo) *walker {
 	return &walker{Repo: r, inPlace: os.Getenv("E2E_STAMPED") != "true"}
@@ -255,24 +255,32 @@ func (w *walker) serve(path string) string {
 // intlTool is intl's tool line: the one line of a repo's go.mod that pins its command and its packages.
 const intlTool = "github.com/joeblew999/mise-intl/cmd/intl"
 
-// newRepo is a new repo, made as docs/intl/README.md says a person makes one: an empty folder with its own git, go mod
-// init, intl's tool line, then go tool intl init and intl:template. Without a version it's this checkout: go.mod
-// requires mise-intl and replaces it with this checkout, as a person trying a change does, and the tool line goes in
-// with go mod edit and go mod tidy; with one, it's that release (go get -tool …@version).
+// newRepo is a new repo, made exactly as README.md's "Use it in your repo" says, step by step: an empty folder with its
+// own git, then 1. go mod init, 2. go run …/cmd/intl@<version> init (the release -version names, which pins itself in
+// go.mod), 3. go tool intl template, 4. go tool intl. Without a version it's this checkout: step 2 becomes go.mod
+// requiring mise-intl and replacing it with this checkout (go mod edit, go mod tidy), then go tool intl init, as a
+// person trying a change does; every other step is the README's.
 func newRepo(r walk.Repo, version string) walk.Repo {
 	n := r.New("intl-new")
-	n.Must("go", "mod", "init", "example.com/intlnew")
+	n.Must("go", "mod", "init", "example.com/intlnew") // 1.
 	at := "this checkout"
-	if version == "" {
+	if version == "" { // 2.
 		n.Must("go", "mod", "edit", "-require=github.com/joeblew999/mise-intl@v0.0.0", "-replace=github.com/joeblew999/mise-intl="+r.Top, "-tool="+intlTool)
-		n.Must("go", "mod", "tidy") // go.sum: what the checkout's module needs, as a release's go get -tool writes it
+		n.Must("go", "mod", "tidy")
+		n.Must("go", "tool", "intl", "init")
 	} else {
-		n.Must("go", "get", "-tool", intlTool+"@"+version)
+		n.Must("go", "run", intlTool+"@"+version, "init")
+		b, _ := os.ReadFile(filepath.Join(n.Dir, "go.mod"))
+		if !strings.Contains(string(b), "github.com/joeblew999/mise-intl "+version) || !strings.Contains(string(b), intlTool) {
+			r.T.Fatalf("go run …@%s init didn't pin itself in go.mod:\n%s", version, b)
+		}
 		at = version
 	}
-	n.Must("go", "tool", "intl", "init")
-	n.MustTask("intl:template")
-	n.Pass("%s: an empty folder, its own git, go mod init, intl's tool line at %s, go tool intl init, then intl:template", n.Name, at)
+	n.Must("go", "tool", "intl", "template")                                   // 3.
+	if out := n.Must("go", "tool", "intl"); !strings.Contains(out, "next: ") { // 4.
+		r.T.Fatalf("go tool intl says nothing to run next:\n%s", out)
+	}
+	n.Pass("%s, made as README.md says: go mod init, intl init at %s (its pin in go.mod), go tool intl template, go tool intl", n.Name, at)
 	return n
 }
 

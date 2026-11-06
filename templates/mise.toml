@@ -1,5 +1,14 @@
-# The app's own tasks, with mise: intl's are its own file, .mise/tasks/intl.toml (go tool intl init writes it).
-# Without mise: go run ./app and go test ./...
+# A Go app's own tools: Go, from go.mod's toolchain line, and what downloads the modules go.mod pins (mise run setup).
+# intl comes from go.mod too (go tool intl): its tasks are .mise/tasks/intl.toml, which go tool intl init writes (then
+# mise run intl shows the way). Without mise: go mod download, go run ./app and go test ./...
+
+[settings]
+# go.mod's toolchain line is the Go pin; this makes mise install honour it.
+idiomatic_version_file_enable_tools = ["go"]
+
+[tasks.setup]
+description = "Download the modules go.mod pins, intl's among them"
+run = "go mod download"
 
 [tasks.serve]
 description = "Run the app: http://localhost:8080 (ADDR to change it)"

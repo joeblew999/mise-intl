@@ -49,8 +49,8 @@ to install, and **mise is optional**.
 | Intl, off Cloudflare | workerd, which intl fetches once and checks against the SHA-256 it pins (`INTL_WORKERD` names one of your own) | intl |
 | Go itself | `go.mod`'s `toolchain` line (any Go from 1.21 downloads it) | Go |
 
-With mise, the repo gets each command as a task too, numbered in the order a repo meets them, and mise installs the Go
-that `go.mod` names (`.mise/config.toml`).
+With mise, the repo gets each command as a task too, numbered in the order a repo meets them; the app's own
+`mise.toml` has mise install the Go that `go.mod` names (the template's app does, `go tool intl template`).
 
 ## Using it day to day
 
@@ -115,14 +115,13 @@ Translating with Claude also needs [Claude Code](https://code.claude.com) (`clau
 1. Add intl to the repo and set it up, in its Go module (`go mod init <module>` first, if it has none):
 
    ```sh
-   go get -tool github.com/joeblew999/mise-intl/cmd/intl@latest
-   go tool intl init --locales en,de,ar
+   go run github.com/joeblew999/mise-intl/cmd/intl@latest init --locales en,de,ar   # pins itself in go.mod: go tool intl from then on
    go tool intl template   # only in a repo with no app yet: the template's little app, in English and German
    ```
 
    `init` writes:
    - intl's tasks, `.mise/tasks/intl.toml`, where mise finds them with no configuration
-     ([Task discovery](https://mise.jdx.dev/tasks/task-discovery.html)), and `.mise/config.toml`, Go's version for mise;
+     ([Task discovery](https://mise.jdx.dev/tasks/task-discovery.html));
    - the `intl` skill into `.claude/skills`, and Claude Code's hook for cloud sessions;
    - these docs, `docs/intl/README.md`, and the GitHub workflow, `.github/workflows/intl.yml`;
    - `intl.toml`, the source catalog and a catalog per language;
@@ -130,7 +129,8 @@ Translating with Claude also needs [Claude Code](https://code.claude.com) (`clau
    - the generated files into `.gitignore`.
 
    It picks up gsxui from `gsxui.json`, and then compiles the catalogs. Running it again leaves what is the repo's
-   alone. After upgrading intl (`go get -tool github.com/joeblew999/mise-intl/cmd/intl@latest`, as any Go module), it
+   alone. To upgrade intl, run it again at the newer release (`go run …/cmd/intl@latest init`, which moves go.mod's pin
+   to it), or upgrade the module as any Go module (`go get -tool …/cmd/intl@latest`, then `go tool intl init`): it
    writes intl's own files again, and `go tool intl check` says when they're out of date.
 
 2. Serve every request through `intl.Site`. It handles the locale URLs (`/about`, `/de/about`), the locale cookie,

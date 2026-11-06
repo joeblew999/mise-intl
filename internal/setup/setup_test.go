@@ -80,7 +80,7 @@ func TestInitFresh(t *testing.T) {
 	if s := read(t, root, ".gitignore"); !strings.Contains(s, "\nintl_gen.go\nintl_messages_gen.go\nintl-messages.mjs\n") {
 		t.Errorf(".gitignore:\n%s", s)
 	}
-	// No mise.toml: Go's version comes from the template's .mise/config.toml, which go tool intl init writes, and
+	// No mise.toml: Go's version for mise is the app's own (the template's app has it, go tool intl template), and
 	// intl fetches the workerd it pins itself (intl/workerd.Path), so an app needs only its module.
 	if _, err := os.Stat(filepath.Join(root, "mise.toml")); err == nil {
 		t.Errorf("init wrote mise.toml:\n%s", read(t, root, "mise.toml"))

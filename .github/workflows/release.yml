@@ -1,0 +1,47 @@
+# A release on every change to what intl is (its packages, its command, the files it writes, its skill) merged to
+# main, so go get github.com/joeblew999/mise-intl/cmd/intl@latest always gets what main is. It checks out (with the
+# tags) and installs mise, then runs mise run tool:release, the same as on any machine: the commit's v* tag or the next
+# patch version, the version on proxy.golang.org, and a new repo made the README's way at it and walked. A v* tag on a
+# commit pushed with it releases that version. Shell steps only, as ci.yml.
+name: release
+
+on:
+  push:
+    branches: [main]
+    # Not a test: none changes anything in intl.
+    paths: ["cmd/**", "intl/**", "gsxintl/**", "internal/**", "templates/**", "!**/*_test.go", "go.mod", "go.sum", ".github/workflows/release.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write # the release's tag
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      MISE_YES: "1"
+    steps:
+      - name: Check out with git, with the tags (no actions/checkout)
+        run: |
+          git init -q .
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch -q --tags origin "$GITHUB_SHA"
+          git checkout -q --detach "$GITHUB_SHA"
+          git log --oneline -1
+
+      - name: mise and Go
+        run: |
+          echo "MISE_TRUSTED_CONFIG_PATHS=$PWD" >> "$GITHUB_ENV"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          curl -fsSL https://mise.run | MISE_QUIET=1 sh
+          export PATH="$HOME/.local/bin:$PATH" MISE_TRUSTED_CONFIG_PATHS="$PWD"
+          mise install
+
+      - name: The release, from the root mise as on any machine (mise run tool:release, after tool:test)
+        run: mise run tool:release
