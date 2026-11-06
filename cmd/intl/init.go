@@ -18,12 +18,13 @@ import (
 )
 
 // theirs are the template's files a repo may have of its own already: init writes them only when it has none.
-var theirs = map[string]bool{".gitignore": true, ".claude/settings.json": true}
+// .mise/config.toml is what intl needs from mise (Go, from go.mod), as mise-cloudflare's init writes its pin there.
+var theirs = map[string]bool{".gitignore": true, ".claude/settings.json": true, ".mise/config.toml": true}
 
 // initRepo is go tool intl init (03): the repo set up for intl, in its Go module. Run as a release (go run
 // github.com/joeblew999/mise-intl/cmd/intl@latest init, the README's way), it pins itself first: intl's tool line in
 // go.mod at exactly that release (pinSelf), so go tool intl is that release from then on. Then the template's tool files
-// (templates.Tool: the numbered tasks, the GitHub workflow, the Claude Code hook and skill, the
+// (templates.Tool: the numbered tasks and their mise config, the GitHub workflow, the Claude Code hook and skill, the
 // docs), each at its path; then the repo's own (setup.Init): intl.toml with its languages (--locales en,de), the
 // catalogs (--catalogs locales), and in a gsx app gsx.toml's filters and renderers; then gen. Every step leaves alone
 // what is the repo's, so it runs again after upgrading: the files that are intl's are written as this version writes
@@ -45,6 +46,7 @@ func initRepo(args []string) {
 	}
 	pinSelf(root)
 	writeTool(root)
+	trustConfig(root, ".mise/config.toml")
 	must(setup.Init(root, o, os.Stdout))
 	c, err := config.Find(root)
 	must(err)

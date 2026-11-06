@@ -1,11 +1,9 @@
-# A Go app's own tools: Go (go.mod's toolchain line), and workerd, which intl's Intl runs on outside a Worker, from
-# package.json, as mise-cloudflare's template gets wrangler (mise run setup installs both: workerd, and the modules
-# go.mod pins). intl itself comes from go.mod (go tool intl): its tasks are .mise/tasks/intl.toml, which go tool intl
-# init writes (then mise run intl shows the way).
+# A Go app's own tools: workerd, which intl's Intl runs on outside a Worker, from package.json, as mise-cloudflare's
+# template gets wrangler (mise run setup installs it, and the modules go.mod pins). intl itself comes from go.mod (go
+# tool intl): its tasks are .mise/tasks/intl.toml, and the Go they run with (go.mod's) is .mise/config.toml, both of
+# which go tool intl init writes (then mise run intl shows the way).
 
 [settings]
-# go.mod's toolchain line is the Go pin; this makes mise install honour it.
-idiomatic_version_file_enable_tools = ["go"]
 # mise 2026.10 fails to install aube while it fetches its agent skill (a 404); it isn't needed.
 skills.fetch = false
 

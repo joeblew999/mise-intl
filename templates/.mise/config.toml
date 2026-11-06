@@ -1,0 +1,8 @@
+# intl for this repo, with mise: go tool intl is built by Go from mise-intl's module at the version go.mod pins, so the
+# tool intl needs from mise is Go, at go.mod's version (its toolchain line, or else its go line). go tool intl init
+# writes this file when the repo has none, as mise-cloudflare's init writes its pin; from then on it is the repo's. The
+# numbered tasks beside it (.mise/tasks/intl.toml) run with it.
+
+[settings]
+# go.mod's toolchain line is the Go pin; this makes mise install honour it.
+idiomatic_version_file_enable_tools = ["go"]
