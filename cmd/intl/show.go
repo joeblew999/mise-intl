@@ -17,7 +17,7 @@ type report struct {
 	Version   string   `json:"version"`   // this build of intl: the module version go.mod pins
 	Locales   []string `json:"locales"`   // the shipped languages, the source first
 	Generated bool     `json:"generated"` // the messages package is the catalogs' (gen has run since they changed)
-	App       bool     `json:"app"`       // the repo has a Go program of its own (a main.go): the template's, or its own
+	App       bool     `json:"app"`       // the repo has a Go program of its own (main.go, or the template's app/main.go)
 	Left      int      `json:"left"`      // messages missing or stale, in every language
 	Problems  []string `json:"problems"`  // intl's files that are out of date, or the catalogs that don't read
 	Next      string   `json:"next"`      // the task to run next
@@ -39,7 +39,7 @@ func show(args []string) {
 	default:
 		r.Locales = c.Locales
 		r.Problems = append(r.Problems, stale(c.Root)...)
-		r.App = exists(filepath.Join(c.Root, "main.go"))
+		r.App = hasApp(c.Root)
 		p, err := catalog.Read(c)
 		if err != nil {
 			r.Problems = append(r.Problems, err.Error())

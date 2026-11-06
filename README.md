@@ -21,7 +21,7 @@ go get -tool github.com/joeblew999/mise-intl/cmd/intl@latest
 go tool intl init        # intl's files: tasks, intl.toml, locales/en.toml, skill, docs, workflow, Claude Code hook
 go tool intl template    # the little app, only in a repo with no app yet: a page of intl's formats, English and German
 go tool intl             # what's done, and what to run next (or: mise run intl)
-go run .                 # http://localhost:8080, and /de/ in German
+go run ./app             # http://localhost:8080, and /de/ in German
 ```
 
 `init` writes `docs/intl/README.md` into the repo: everything about intl there, every command, gsx or not, the
@@ -47,8 +47,9 @@ An app without gsx never gets gsx in its `go.mod`, not even through `go tool int
 [templates/](templates/) is a whole repo that runs where it is, for testing this one and for others to start from, in
 two parts: the tool's files, which `go tool intl init` writes into any repo (the numbered tasks, Go's version for mise,
 the GitHub workflow, Claude Code's hook and skill, the docs), and the little app, which `go tool intl template` writes
-into a repo with no app yet (one page in plain Go: `net/http`, `html/template`, `intl.Site`, `intl.Text`).
-[templates.go](templates.go) embeds both.
+into a repo with no app yet (one page in plain Go, in `app/`: `net/http`, `html/template`, `intl.Site`, `intl.Text`).
+[templates/templates.go](templates/templates.go) embeds both, the template's only Go at its top, as mise-cloudflare's
+is.
 
 Its walk, [mise-check](https://github.com/joeblew999/mise-check)'s `walk` ([walk_test.go](walk_test.go)), runs the
 template's numbered tasks in their order, through its own mise file, each checked: on the template where it is, and on

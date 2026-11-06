@@ -10,16 +10,16 @@ import (
 	"path/filepath"
 	"strings"
 
-	miseintl "github.com/joeblew999/mise-intl"
 	"github.com/joeblew999/mise-intl/internal/setup"
 	"github.com/joeblew999/mise-intl/intl/config"
+	"github.com/joeblew999/mise-intl/templates"
 )
 
 // theirs are the template's files a repo may have of its own already: init writes them only when it has none.
 var theirs = map[string]bool{".gitignore": true, ".claude/settings.json": true, ".mise/config.toml": true}
 
 // initRepo is go tool intl init (03): the repo set up for intl, in its Go module. First the template's tool files
-// (miseintl.Tool: the numbered tasks, Go's version for mise, the GitHub workflow, the Claude Code hook and skill, the
+// (templates.Tool: the numbered tasks, Go's version for mise, the GitHub workflow, the Claude Code hook and skill, the
 // docs), each at its path; then the repo's own (setup.Init): intl.toml with its languages (--locales en,de), the
 // catalogs (--catalogs locales), and in a gsx app gsx.toml's filters and renderers; then gen. Every step leaves alone
 // what is the repo's, so it runs again after upgrading: the files that are intl's are written as this version writes
@@ -51,7 +51,7 @@ func initRepo(args []string) {
 // writeTool writes the template's tool files into the repo at root, each at its path there, but a file that is the
 // repo's own.
 func writeTool(root string) {
-	must(fs.WalkDir(miseintl.Tool, ".", func(p string, d fs.DirEntry, err error) error {
+	must(fs.WalkDir(templates.Tool, ".", func(p string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
 			return err
 		}
@@ -59,7 +59,7 @@ func writeTool(root string) {
 		if theirs[p] && exists(to) {
 			return nil
 		}
-		b, err := fs.ReadFile(miseintl.Tool, p)
+		b, err := fs.ReadFile(templates.Tool, p)
 		if err != nil {
 			return err
 		}
@@ -77,11 +77,11 @@ func writeTool(root string) {
 // repo's own that doesn't run the hook.
 func stale(root string) []string {
 	var out []string
-	fs.WalkDir(miseintl.Tool, ".", func(p string, d fs.DirEntry, err error) error {
+	fs.WalkDir(templates.Tool, ".", func(p string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() || theirs[p] {
 			return err
 		}
-		want, _ := fs.ReadFile(miseintl.Tool, p)
+		want, _ := fs.ReadFile(templates.Tool, p)
 		// Line endings aside: a Windows checkout of the repo may have \r\n where init wrote \n.
 		crlf := func(b []byte) []byte { return bytes.ReplaceAll(b, []byte("\r\n"), []byte("\n")) }
 		b, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(p)))
@@ -93,8 +93,8 @@ func stale(root string) []string {
 		}
 		return nil
 	})
-	if b, err := os.ReadFile(filepath.Join(root, ".claude", "settings.json")); err == nil && !bytes.Contains(b, []byte(miseintl.HookFile)) {
-		out = append(out, ".claude/settings.json doesn't run .claude/hooks/"+miseintl.HookFile+": add its SessionStart entry (docs/intl/README.md)")
+	if b, err := os.ReadFile(filepath.Join(root, ".claude", "settings.json")); err == nil && !bytes.Contains(b, []byte(templates.HookFile)) {
+		out = append(out, ".claude/settings.json doesn't run .claude/hooks/"+templates.HookFile+": add its SessionStart entry (docs/intl/README.md)")
 	}
 	return out
 }

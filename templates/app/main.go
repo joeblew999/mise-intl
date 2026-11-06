@@ -1,5 +1,5 @@
 // Command app is the template's little app: one page of what the runtime's own Intl writes in the reader's language,
-// English or German, in plain Go (net/http, html/template, intl.Site and intl.Text; no gsx). go run . serves it at
+// English or German, in plain Go (net/http, html/template, intl.Site and intl.Text; no gsx). go run ./app serves it at
 // http://localhost:8080 (ADDR to change it); /de/ is the page in German.
 package main
 

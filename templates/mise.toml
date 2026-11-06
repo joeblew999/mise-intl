@@ -1,9 +1,9 @@
 # The app's own tasks, with mise: intl's are its own file, .mise/tasks/intl.toml (go tool intl init writes it).
-# Without mise: go run . and go test ./...
+# Without mise: go run ./app and go test ./...
 
 [tasks.serve]
 description = "Run the app: http://localhost:8080 (ADDR to change it)"
-run = "go run ."
+run = "go run ./app"
 
 [tasks.test]
 description = "The app's own tests (intl:verify runs them, then check)"
