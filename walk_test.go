@@ -257,7 +257,7 @@ const intlTool = "github.com/joeblew999/mise-intl/cmd/intl"
 
 // newRepo is a new repo, made exactly as README.md's "Use it in your repo" says, step by step: an empty folder with its
 // own git, then 1. go mod init, 2. go run …/cmd/intl@<version> init (the release -version names, which pins itself in
-// go.mod), 3. go tool intl template, 4. go tool intl. Without a version it's this checkout: step 2 becomes go.mod
+// go.mod), 3. mise run intl:template, 4. mise run intl. Without a version it's this checkout: step 2 becomes go.mod
 // requiring mise-intl and replacing it with this checkout (go mod edit, go mod tidy), then go tool intl init, as a
 // person trying a change does; every other step is the README's.
 func newRepo(r walk.Repo, version string) walk.Repo {
@@ -276,11 +276,11 @@ func newRepo(r walk.Repo, version string) walk.Repo {
 		}
 		at = version
 	}
-	n.Must("go", "tool", "intl", "template")                                   // 3.
-	if out := n.Must("go", "tool", "intl"); !strings.Contains(out, "next: ") { // 4.
-		r.T.Fatalf("go tool intl says nothing to run next:\n%s", out)
+	n.MustTask("intl:template")                                      // 3.
+	if out := n.MustTask("intl"); !strings.Contains(out, "next: ") { // 4.
+		r.T.Fatalf("mise run intl says nothing to run next:\n%s", out)
 	}
-	n.Pass("%s, made as README.md says: go mod init, intl init at %s (its pin in go.mod), go tool intl template, go tool intl", n.Name, at)
+	n.Pass("%s, made as README.md says: go mod init, intl init at %s (its pin in go.mod), mise run intl:template, mise run intl", n.Name, at)
 	return n
 }
 

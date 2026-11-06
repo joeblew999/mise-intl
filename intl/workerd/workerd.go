@@ -11,19 +11,22 @@
 //	}
 //	defer stop()
 //
-// workerd is the release Version pins, which intl fetches once into this machine's cache and checks against its
-// SHA-256 (Path): an app needs nothing but intl's module. INTL_WORKERD names a workerd of your own instead. Each Intl call is a request to it on 127.0.0.1, about 0.1 ms. It ends with the process that started
-// it, however that process ends (launch).
+// workerd comes from mise, as every tool of the repo's does: the repo's mise.toml pins it at Version (the template's
+// app's does, go tool intl template), and mise puts it on the PATH of every task and mise exec (Path). INTL_WORKERD names a
+// workerd of your own instead (a server's image built without mise). Each Intl call is a request to it on 127.0.0.1,
+// about 0.1 ms. It ends with the process that started it, however that process ends (launch).
 package workerd
 
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -35,9 +38,25 @@ import (
 // CompatibilityDate is the Workers compatibility date the Intl Worker runs on.
 const CompatibilityDate = "2026-09-11"
 
-// Version is the workerd release intl runs and is tested with, fetched by Path; releases (fetch.go) has its files'
-// SHA-256s, which move with it.
+// Version is the workerd release intl is tested with: the template's mise.toml pins it, and this repo's own mise.toml
+// pins it too (TestWorkerdPins).
 const Version = "1.20261104.1"
+
+// Path is the workerd intl runs: INTL_WORKERD when it names one, or else the workerd on the PATH, which mise puts there
+// at the version the repo's mise.toml pins.
+func Path() (string, error) {
+	if p := os.Getenv("INTL_WORKERD"); p != "" {
+		return p, nil
+	}
+	p, err := exec.LookPath("workerd")
+	if err != nil {
+		return "", errors.New(noWorkerd)
+	}
+	return p, nil
+}
+
+// noWorkerd says how to get workerd.
+const noWorkerd = "workerd, the Workers runtime whose Intl intl runs on outside a Worker, isn't on the PATH: add it to the repo's mise.toml [tools] (workerd = \"" + Version + "\", as the template's app has it) and run through mise (mise install, then mise run …), or set INTL_WORKERD to a workerd of your own"
 
 var (
 	base   string
@@ -118,8 +137,11 @@ const config :Workerd.Config = (
 			break
 		}
 		select {
-		case <-exited: // it didn't start: a bad config, a workerd that isn't one
+		case <-exited: // it didn't start: a mise shim with no version for this folder, a bad config
 			os.RemoveAll(dir)
+			if strings.Contains(errs.String(), "No version is set") {
+				return nil, errors.New(noWorkerd)
+			}
 			return nil, fmt.Errorf("workerd exited: %s", strings.TrimSpace(errs.String()))
 		default:
 		}

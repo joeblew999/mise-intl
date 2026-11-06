@@ -8,19 +8,20 @@ catalogs, and every date, number, plural, list and name written by the runtime's
 Worker's or workerd's), in the reader's language, time zone and clock. Translating, by Claude Code or by people, is a
 command, and so is checking all of it in CI.
 
-> **A repo that uses intl needs only this Go module. There is no binary.** One line of its `go.mod` pins everything:
-> `go get -tool github.com/joeblew999/mise-intl/cmd/intl@latest`. The command is `go tool intl`, which Go builds from
-> this module's source at the version `go.mod` pins, checked by `go.sum`. Off Cloudflare, intl fetches the workerd
-> release it pins and checks its SHA-256 itself. mise is optional: with it, each command is a numbered task too.
+> **intl itself comes only from this Go module: there is no binary.** One line of a repo's `go.mod` pins it, the
+> command and the packages at one version: the command is `go tool intl`, which Go builds from this module's source at
+> the version `go.mod` pins, checked by `go.sum`. **Its tools come from mise**, as every tool of our repos does: the
+> repo's `mise.toml` pins workerd, which intl's Intl runs on outside a Cloudflare Worker (the template's app has it),
+> and each command is a numbered task, `mise run intl:<nn>-<command>`.
 
 ## Use it in your repo
 
 Step by step, at the repository's root (GitHub and Claude Code read `.github/` and `.claude/` only there), in a repo
 that's new or has a Go app of its own:
 
-1. **Install Go**, once on each machine: [Go's download page](https://go.dev/dl/) (`brew install go`, or `mise use -g
-   go`). From then on the repo's `go.mod` names its Go, and any Go from 1.21 on downloads that one. A new repo needs a
-   Go module first: `go mod init example.com/myapp`.
+1. **Install mise, and Go with it**, once on each machine: [mise's getting started](https://mise.jdx.dev/getting-started.html)
+   (`curl https://mise.run | sh`, or `brew install mise`), then `mise use -g go`. From then on the repo's `go.mod` names
+   its Go, which mise installs. A new repo needs a Go module first: `go mod init example.com/myapp`.
 2. **intl's files, always:**
 
    ```sh
@@ -36,22 +37,25 @@ that's new or has a Go app of its own:
 3. **The template's app, only in a repo with no app yet:**
 
    ```sh
-   go tool intl template
+   mise run intl:template
    ```
 
    It writes the template's little app, `app/`: one page of intl's formats in plain Go, in English and German, with
-   its catalogs and a README. It never writes over a file: a repo with an app of its own gets none of it.
+   its catalogs, a README and the `mise.toml` that pins its tools (Go from `go.mod`, and workerd, which intl's Intl
+   runs on), and installs them. It never writes over a file: a repo with an app of its own gets none of it, and adds
+   `workerd = "1.20261104.1"` to its own `mise.toml`'s `[tools]`.
 
 4. **Then:**
 
    ```sh
-   go tool intl
+   mise run intl
    ```
 
-   It shows what's done, and what to run next. With mise, each command is a task too: `mise run intl`, and
-   `mise run intl:template` for step 3.
+   It shows what's done, and what to run next. Each task runs the command of its name: `mise run intl` is
+   `go tool intl`, `mise run intl:template` is `go tool intl template`.
 
-Commit what steps 1 to 3 wrote. `go run ./app` serves the template's app at http://localhost:8080, `/de/` in German.
+Commit what steps 1 to 3 wrote. `mise run serve` serves the template's app at http://localhost:8080, `/de/` in
+German.
 
 `init` writes `docs/intl/README.md` into the repo: everything about intl there, every command, gsx or not, the
 screens, translating. It is [templates/docs/intl/README.md](templates/docs/intl/README.md) here, as a repo has it.

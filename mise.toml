@@ -17,6 +17,11 @@
 # go.mod's toolchain line is the Go pin; this makes mise install honour it.
 idiomatic_version_file_enable_tools = ["go"]
 
+[tools]
+# intl's Intl outside a Worker: this repo's go test, go tool intl and the walk run on it (intl/workerd's Version, which
+# the template's mise.toml pins too: TestWorkerdPins).
+workerd = "1.20261104.1"
+
 [tasks."template:gen"]
 description = "The template's messages package (templates/locales/intl_gen.go), which go vet and go test of this module need: go tool intl gen, in the template"
 dir = "{{config_root}}/templates"
@@ -41,7 +46,7 @@ env = { REPO_PATH = "templates", E2E_STAMPED = "true" }
 run = 'go test . -run "^TestWalk$" -count=1 -v -timeout 15m{% if usage.version %} -args -version "{{usage.version}}"{% endif %}'
 
 [tasks."tool:test"]
-description = "go vet, and every Go test, run for real (no cached results): the walk's skip without REPO_PATH, so they need nothing; Intl comes from the workerd intl fetches"
+description = "go vet, and every Go test, run for real (no cached results): the walk's skip without REPO_PATH, so they need nothing but this file's tools; Intl comes from its workerd"
 depends = ["template:gen"]
 run = 'go vet ./... && go test -count=1 ./...'
 

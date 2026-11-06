@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	// Intl outside a Cloudflare Worker: workerd, which intl fetches once and checks (intl/workerd).
+	// Intl outside a Cloudflare Worker: workerd, which mise.toml pins (run it through mise: mise run serve).
 	stop, err := workerd.Start(locales.Messages)
 	if err != nil {
 		log.Fatal(err)

@@ -3,7 +3,6 @@
 # go tool intl <command>, which Go builds from mise-intl's module at the version the repo's go.mod pins. Steps 00 to 02
 # come before these tasks: the repo's git, its go.mod with intl's tool line, mise install. Each passes its usage values
 # with mise's own templates ({{usage.<name>}}), never shell syntax, so it runs the same under sh, cmd and PowerShell.
-# Without mise, run the commands themselves: go tool intl <command>.
 # Written by go tool intl init: don't edit it. After upgrading intl, go tool intl init writes it again.
 
 ["intl"]

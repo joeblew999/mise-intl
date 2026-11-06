@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
 
 	"github.com/joeblew999/mise-intl/internal/catalog"
 	"github.com/joeblew999/mise-intl/internal/setup"
-	"github.com/joeblew999/mise-intl/intl"
 	"github.com/joeblew999/mise-intl/intl/config"
 	"github.com/joeblew999/mise-intl/templates"
 )
@@ -36,11 +36,10 @@ func template(args []string) {
 		return
 	}
 	if !slices.ContainsFunc(c.Locales, func(l string) bool { return strings.EqualFold(l, "de") }) {
-		stop := startIntl()
-		name := intl.NewLocale("de").Name()
-		stop()
-		must(catalog.AddLocale(c, "de", name))
-		fmt.Println("added de, " + name + ", to intl.toml: the template's app is in English and German")
+		// German's name is only the new catalog's first comment, which the template's de.toml replaces at once: no
+		// Intl, so no workerd, before the mise.toml that pins it is written.
+		must(catalog.AddLocale(c, "de", "German"))
+		fmt.Println("added de to intl.toml: the template's app is in English and German")
 		var err error
 		c, err = config.Find(c.Root)
 		must(err)
@@ -65,8 +64,8 @@ func template(args []string) {
 		_, err := writeChanged(c.Root, to, b)
 		must(err)
 	}
-	trustConfig(c.Root, "mise.toml")
 	must(read(c).Generate(os.Stderr))
+	setUpApp(c.Root)
 	fmt.Println("✓ the template's app, in English and German: next, go tool intl (or mise run intl), then go run ./app (mise run serve)")
 }
 
@@ -107,4 +106,20 @@ func starter(path string) bool {
 // app/main.go.
 func hasApp(root string) bool {
 	return exists(filepath.Join(root, "main.go")) || exists(filepath.Join(root, "app", "main.go"))
+}
+
+// setUpApp installs what the template's app runs on, as mise-cloudflare's template installs its Worker's: mise trusts
+// the mise.toml template wrote, mise install gets its tools (Go from go.mod, and workerd), then its setup task runs.
+func setUpApp(root string) {
+	trustConfig(root, "mise.toml")
+	if _, err := exec.LookPath("mise"); err != nil {
+		fmt.Println("· no mise here: install it (https://mise.jdx.dev), then mise install and mise run setup")
+		return
+	}
+	for _, args := range [][]string{{"install"}, {"run", "setup"}} {
+		fmt.Println("$ mise " + strings.Join(args, " "))
+		cmd := exec.Command("mise", args...)
+		cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = root, os.Stdin, os.Stdout, os.Stderr
+		must(cmd.Run())
+	}
 }

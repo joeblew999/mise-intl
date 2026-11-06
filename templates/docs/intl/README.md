@@ -36,21 +36,23 @@ style, a slider whose value is written in kilometres, need no request and no Go:
 Go decides nothing about a language: no CLDR tables, no formatting of its own. Outside a Worker (an ordinary Go
 server, `go test`, the tooling) the Intl is workerd's, the same V8, which intl starts itself (`intl/workerd`).
 
-## What the repo needs: only its Go module
+## What the repo needs: intl's Go module, and mise
 
-intl comes from a Go module, so a repo needs nothing but its `go.mod` to get it, run it and pin it. There is no binary
-to install, and **mise is optional**.
+intl itself comes only from its Go module: there is no binary to install. Its tools come from mise, as every tool of
+the repo's does.
+
+`mise.toml` pins workerd, and the template's app has it. A repo with an app of its own adds the line to its
+`[tools]`: `workerd = "1.20261104.1"`.
 
 | | How | Checked by |
 |---|---|---|
 | The command | `go tool intl <command>`: Go builds it from mise-intl's source, at the version `go.mod` pins | `go.sum` |
 | The packages an app imports | `github.com/joeblew999/mise-intl/intl` (and `gsxintl`, in a gsx app) | `go.sum` and the compiler |
 | Both at one version | one line of `go.mod`: `tool github.com/joeblew999/mise-intl/cmd/intl` | Go |
-| Intl, off Cloudflare | workerd, which intl fetches once and checks against the SHA-256 it pins (`INTL_WORKERD` names one of your own) | intl |
-| Go itself | `go.mod`'s `toolchain` line (any Go from 1.21 downloads it) | Go |
+| Intl, off Cloudflare | workerd, from mise: the repo's `mise.toml` pins it (`INTL_WORKERD` names one of your own) | mise |
+| Go itself | `go.mod`'s `toolchain` line, which the repo's `mise.toml` has mise install | mise |
 
-With mise, the repo gets each command as a task too, numbered in the order a repo meets them; the app's own
-`mise.toml` has mise install the Go that `go.mod` names (the template's app does, `go tool intl template`).
+Each command is a task too, numbered in the order a repo meets them: `mise run intl:06-gen` runs `go tool intl gen`.
 
 ## Using it day to day
 
@@ -76,7 +78,7 @@ mise run intl:10-translate de ja         # only German and Japanese
 mise run intl:13-confirm de:cart.items   # only one translation
 ```
 
-Without mise, each is the command of its name: `mise run intl:06-gen` runs `go tool intl gen`. The usual loop: write
+Each runs the command of its name: `mise run intl:06-gen` runs `go tool intl gen`. The usual loop: write
 or change messages in the source catalog, `mise run intl:10-translate`, `mise run intl:04-check`. A new language:
 `mise run intl:08-add-locale fr`, then `mise run intl:10-translate`. (Adding its id to `intl.toml`'s `locales` by
 hand works too: the next `mise run intl:06-gen` writes its catalog.)
@@ -116,7 +118,7 @@ Translating with Claude also needs [Claude Code](https://code.claude.com) (`clau
 
    ```sh
    go run github.com/joeblew999/mise-intl/cmd/intl@latest init --locales en,de,ar   # pins itself in go.mod: go tool intl from then on
-   go tool intl template   # only in a repo with no app yet: the template's little app, in English and German
+   mise run intl:template  # only in a repo with no app yet: the template's little app, in English and German, and its tools
    ```
 
    `init` writes:
@@ -181,8 +183,9 @@ Translating with Claude also needs [Claude Code](https://code.claude.com) (`clau
 4. Give intl its Intl.
 
    On an ordinary Go server, start workerd's before serving, with the catalogs `go tool intl gen` embeds in your
-   messages package (`intl_messages_gen.go`). intl fetches the workerd release it pins once, into the machine's cache,
-   and checks its SHA-256 (`INTL_WORKERD` names one of your own, for an image built offline). Each formatted value is a request to it on 127.0.0.1, about 0.1 ms:
+   messages package (`intl_messages_gen.go`). workerd comes from mise, which the repo's `mise.toml` pins it for (run the
+   server through mise, or put its release binary in your image and name it with `INTL_WORKERD`). Each formatted value
+   is a request to it on 127.0.0.1, about 0.1 ms:
 
    ```go
    stop, err := workerd.Start(locales.Messages) // github.com/joeblew999/mise-intl/intl/workerd
@@ -357,7 +360,7 @@ interactive session ("translate the new messages").
 
 ## The tasks
 
-Numbered in the order a repo meets them; each runs the command of its name, so they also run without mise.
+Numbered in the order a repo meets them; each runs the command of its name.
 
 | Task (with mise) | Command (without) | What it does |
 |---|---|---|

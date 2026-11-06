@@ -1,10 +1,13 @@
-# A Go app's own tools: Go, from go.mod's toolchain line, and what downloads the modules go.mod pins (mise run setup).
-# intl comes from go.mod too (go tool intl): its tasks are .mise/tasks/intl.toml, which go tool intl init writes (then
-# mise run intl shows the way). Without mise: go mod download, go run ./app and go test ./...
+# A Go app's own tools: Go (go.mod's toolchain line), workerd, which intl's Intl runs on outside a Worker, and what
+# downloads the modules go.mod pins (mise run setup). intl itself comes from go.mod (go tool intl): its tasks are
+# .mise/tasks/intl.toml, which go tool intl init writes (then mise run intl shows the way).
 
 [settings]
 # go.mod's toolchain line is the Go pin; this makes mise install honour it.
 idiomatic_version_file_enable_tools = ["go"]
+
+[tools]
+workerd = "1.20261104.1"   # intl's Intl outside a Worker: go tool intl, go test, the app itself (intl/workerd)
 
 [tasks.setup]
 description = "Download the modules go.mod pins, intl's among them"
