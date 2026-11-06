@@ -94,5 +94,13 @@ func fetch(file, want, dir, path string) error {
 	if err := os.Chmod(tmp.Name(), 0o755); err != nil {
 		return err
 	}
-	return os.Rename(tmp.Name(), path)
+	if err := os.Rename(tmp.Name(), path); err != nil {
+		// Another process fetched it at the same time (go test's packages): on Windows a rename can't replace a file
+		// another process has open, where macOS and Linux replace it. Theirs is the same release, checked the same way.
+		if _, statErr := os.Stat(path); statErr == nil {
+			return nil
+		}
+		return err
+	}
+	return nil
 }
