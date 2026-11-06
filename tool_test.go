@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/joeblew999/mise-check/walk"
 )
 
 // TestToolRelease: mise run tool:release releases mise-intl from the commit checked out (release.yml runs the
@@ -20,7 +22,7 @@ import (
 // proxy.golang.org, so go get and pkg.go.dev have it at once. With --dry-run (the test's flag -dry-run) it tags and
 // publishes nothing: goreleaser builds a snapshot into dist/.
 func TestToolRelease(t *testing.T) {
-	onlyFrom(t, "tool:release")
+	walk.OnlyByName(t)
 	tag, isNew, err := releaseTag()
 	if err != nil {
 		t.Fatal(err)
@@ -109,10 +111,3 @@ func runShown(t *testing.T, env []string, name string, args ...string) {
 	}
 }
 
-// onlyFrom skips a test that only its own task runs (mise sets MISE_TASK_NAME), so go test ./... never does it.
-func onlyFrom(t *testing.T, task string) {
-	t.Helper()
-	if os.Getenv("MISE_TASK_NAME") != task {
-		t.Skip("mise run " + task)
-	}
-}

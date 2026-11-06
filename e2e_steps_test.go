@@ -1,4 +1,4 @@
-// The steps: the repo's numbered tasks, in their order, each with its check (TestWalk walks them).
+// The steps: the repo's numbered tasks, in their order, each with its check (the walk tests walk them).
 
 package e2e
 

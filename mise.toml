@@ -1,14 +1,14 @@
 # mise-intl's own tasks, for working on it. Run every task here, at the top: everything is driven from this file, as
 # mise-cloudflare's root is. The steps a person takes are a repo's own numbered tasks (intl:03-init to 14-prune, in its
-# .mise/tasks). The walk (TestWalk, walk_test.go) runs them in order, on the template or on a new repo made from it.
+# .mise/tasks). The walks (TestWalkTemplate, TestWalkNewRepo, e2e_walk_test.go) runs them in order, on the template or on a new repo made from it.
 # This file is only what the root does itself, each task named for what it acts on (noun:verb):
 #   template: the template, templates/, a whole repo that runs where it is
 #     mise run template:setup        its own setup task: workerd from its package.json, in templates/node_modules
 #     mise run template:gen          its messages package, which the module's own build and tests need (gen there)
-#     mise run template:e2e          TestWalk on it: its numbered tasks in their order, through its own mise file, each checked
+#     mise run template:e2e          TestWalkTemplate on it: its numbered tasks in their order, through its own mise file, each checked
 #     mise run template:check-mise   misecheck on its tasks file against mise-intl's Go, and against the walk
 #   new-repo: a new repo, made as a person makes one (mise-intl init, then intl:template), by the walk and gone after it
-#     mise run new-repo:e2e          TestWalk on it, at this checkout's build (local) or the release --version names
+#     mise run new-repo:e2e          TestWalkNewRepo on it, at this checkout's build (local) or the release --version names
 #   tool: mise-intl itself, its command and its packages
 #     mise run tool:build            its build, bin/mise-intl (.exe on Windows)
 #     mise run tool:install          that build as the mise version local, the template's on this machine (and any repo's)
@@ -50,22 +50,19 @@ dir = "{{config_root}}/templates"
 run = "go run ../cmd/mise-intl gen"
 
 [tasks."template:e2e"]
-description = "TestWalk on the template, templates/, where it is: its numbered tasks (intl:03-init to 14-prune) in their order, through its own mise file, each checked by what a person would see it do (walk_test.go); the ones that change the catalogs run on a new repo. After tool:install"
+description = "TestWalkTemplate: the template, templates/, where it is: its numbered tasks (intl:03-init to 14-prune) in their order, through its own mise file, each checked by what a person would see it do (walk_test.go); the ones that change the catalogs run on a new repo. After tool:install"
 depends = ["template:gen", "tool:install"]
-env = { REPO_PATH = "templates" }
-run = 'go test . -run "^TestWalk$" -count=1 -v -timeout 15m'
+run = 'go test . -run "^TestWalkTemplate$" -count=1 -v -timeout 15m'
 
 [tasks."template:check-mise"]
 description = "misecheck on the template's tasks file, both ways: against mise-intl's Go (each task's command is its file, each command file is a task's, each flag on both sides) and against the walk that runs them"
-env = { MISE_FILE = "templates/.mise/tasks/mise-intl.toml", GO_CMD = "cmd", GO_LAYOUT = "file", GO_CALLERS = "." }
-run = 'go test . -run "^TestMise$" -count=1 -v'
+run = 'go test . -run "^TestTemplateMise$" -count=1 -v'
 
 [tasks."new-repo:e2e"]
-description = "TestWalk on a new repo, made as a person makes one (an empty folder with its own git, mise-intl init, then its own intl:template: the template's app, its go.mod named for the folder), in a folder of its own that goes when the walk ends; every numbered task, the ones that change the catalogs too. It pins this checkout's build (local, its go.mod using this checkout's packages), or a release with --version, as the release tries it. After tool:install"
+description = "TestWalkNewRepo: a new repo, made as a person makes one (an empty folder with its own git, mise-intl init, then its own intl:template: the template's app, its go.mod named for the folder), in a folder of its own that goes when the walk ends; every numbered task, the ones that change the catalogs too. It pins this checkout's build (local, its go.mod using this checkout's packages), or a release with --version, as the release tries it. After tool:install"
 usage = 'flag "--version <version>" help="pin this release of mise-intl from GitHub, as mise use does, instead of the build of this checkout"'
 depends = ["template:gen", "tool:install"]
-env = { REPO_PATH = "templates", E2E_STAMPED = "true" }
-run = 'go test . -run "^TestWalk$" -count=1 -v -timeout 15m{% if usage.version %} -args -version "{{usage.version}}"{% endif %}'
+run = 'go test . -run "^TestWalkNewRepo$" -count=1 -v -timeout 15m{% if usage.version %} -args -version "{{usage.version}}"{% endif %}'
 
 [tasks."tool:build"]
 description = "This repo's build, bin/mise-intl (mise-intl.exe on Windows: go build names it for the OS)"
@@ -77,7 +74,7 @@ depends = ["tool:build"]
 run = "mise link -f github:joeblew999/mise-intl@local {{config_root}}/bin && mise use -q --path {{config_root}}/templates/.mise/config.local.toml github:joeblew999/mise-intl@local"
 
 [tasks."tool:test"]
-description = "go vet, every Go test, run for real (no cached results), and the release config: the walk's skip without REPO_PATH, so they need nothing but this file's tools; Intl comes from the template's workerd (template:setup)"
+description = "go vet, every Go test, run for real (no cached results), and the release config: the walks run only when named, so they need nothing but this file's tools; Intl comes from the template's workerd (template:setup)"
 depends = ["template:gen"]
 run = "go vet ./... && go test -count=1 ./... && goreleaser check"
 
@@ -88,6 +85,5 @@ depends = ["tool:test"]
 run = 'go test . -run "^TestToolRelease$" -count=1 -v -timeout 30m{% if usage.dry_run %} -args -dry-run{% endif %}'
 
 [tasks."root:check-mise"]
-description = "TestMise on this repo's own mise.toml, the mise side: each task one line, the Go it runs there, its usage passed by name, no POSIX shell syntax, so every task here runs on Windows too. Not the Go side: the root runs Go, it isn't a binary's tasks (mise_test.go)"
-env = { MISE_FILE = "mise.toml" }
-run = 'go test . -run "^TestMise$" -count=1 -v'
+description = "TestRootMise on this repo's own mise.toml, the mise side: each task one line, the Go it runs there, its usage passed by name, no POSIX shell syntax, so every task here runs on Windows too. Not the Go side: the root runs Go, it isn't a binary's tasks (mise_test.go)"
+run = 'go test . -run "^TestRootMise$" -count=1 -v'

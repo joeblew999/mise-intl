@@ -122,20 +122,20 @@ tasks` lists each with what it does.
 | `template:setup` | The template's own setup: its workerd, which this repo's tests run Intl on | Before `tool:test`, once |
 | `template:gen` | The template's messages package, which this module's build needs | Before `tool:test` |
 | `template:e2e` | The walk on the template, where it is | After every change |
-| `template:check-mise` | `TestMise` on the template's tasks file and the tool's Go | After a change to a task or a command |
+| `template:check-mise` | `TestTemplateMise` on the template's tasks file and the tool's Go | After a change to a task or a command |
 | `new-repo:e2e` | The walk on a new repo (`--version` pins a release) | After every change |
 | `tool:build` | This checkout's build, `bin/mise-intl` | Any task needs it |
 | `tool:install` | That build as the mise version `local`, for any repo on this machine (`mise use github:joeblew999/mise-intl@local` there) and the template's (`templates/.mise/config.local.toml`, never committed) | To try a change in another repo, never by waiting on a release |
 | `tool:test` | `go vet`, the Go tests, the release config | After every change |
 | `tool:release` | A release from the commit checked out, as `release.yml` runs it; `--dry-run` tags and publishes nothing | Never by hand: a merge to main runs it |
-| `root:check-mise` | `TestMise` on this repo's own `mise.toml`, its mise side: one line each, the Go it runs there, `usage` passed by name, no POSIX shell syntax, so every task runs on Windows too | After a change to this repo's tasks |
+| `root:check-mise` | `TestRootMise` on this repo's own `mise.toml`, its mise side: one line each, the Go it runs there, `usage` passed by name, no POSIX shell syntax, so every task runs on Windows too | After a change to this repo's tasks |
 
 ### Tests
 
 **The walk.** A repo's steps are its own numbered tasks, `intl:03-init` to `intl:14-prune`
 ([templates/.mise/tasks/mise-intl.toml](templates/.mise/tasks/mise-intl.toml)), after steps 00 to 02 (the repo's git,
 `mise install`, its own `setup`). One name all the way through: `intl:06-gen` runs `mise-intl gen`, which is
-`main.go`'s `case "gen"` calling `gen` in `gen.go`. `TestWalk` walks them in their order, through the repo's own mise
+`main.go`'s `case "gen"` calling `gen` in `gen.go`. The walk tests (`TestWalkTemplate`, `TestWalkNewRepo`) walk them in their order, through the repo's own mise
 file, as a person takes them, each step with its check: `init` writes exactly the template; `check` and the
 workflow's `verify` pass, and a pull request only warns where a push fails; the app answers in English and in German,
 each value as that language's Intl writes it; a language added, exported to a translator and imported back; a changed
@@ -149,7 +149,7 @@ source message confirmed; a key nobody uses pruned. It walks two kinds of repo:
 
 Each walk runs in the repo on that repo's own mise only (`MISE_CEILING_PATHS`).
 
-**The mise ↔ Go checker**, [mise_test.go](mise_test.go)'s `TestMise`, checks a mise file against the Go it runs, both
+**The mise ↔ Go checker**, [mise_test.go](mise_test.go)'s `TestRootMise` and `TestTemplateMise` check a mise file against the Go it runs, both
 ways. Each task's command is a command's file in `cmd/mise-intl`, and each command a task's; each task the walk names
 is one; every task declares its flags and arguments with mise's `usage` and passes them by name. `root:check-mise`
 points it at this repo's own `mise.toml`, its mise side only: the root runs Go, it isn't a binary's tasks.
@@ -164,7 +164,7 @@ points it at this repo's own `mise.toml`, its mise side only: the root runs Go, 
 | [internal/](internal/) | other repos' | the catalogs (`catalog`), a repo's setup (`setup`), intl's JS on Intl (`js`), the badge (`badge`) |
 | [e2e_walk_test.go](e2e_walk_test.go), [e2e_steps_test.go](e2e_steps_test.go), [e2e_mise_test.go](e2e_mise_test.go) | this repo's | the walk, on [mise-check's `walk`](https://github.com/joeblew999/mise-check#use-walk), which runs the steps in their order and does everything that isn't intl's: `TestWalk`; the steps, each with its check; what's intl's in making a repo |
 | [tool_test.go](tool_test.go) | this repo's | `TestToolRelease`, the release: only `mise run tool:release` runs it |
-| [mise_test.go](mise_test.go) | this repo's | `TestMise`: [mise-check's `misecheck`](https://github.com/joeblew999/mise-check) on a mise file of this repo and the Go it runs, both ways |
+| [mise_test.go](mise_test.go) | this repo's | `TestRootMise` and `TestTemplateMise`: [mise-check's `misecheck`](https://github.com/joeblew999/mise-check) on a mise file of this repo and the Go it runs, both ways |
 | [workerd_test.go](workerd_test.go), [gsx_test.go](gsx_test.go) | this repo's | the workerd the template pins; intl's packages without gsx |
 | [.github/workflows/](.github/workflows/) | this repo's | its own workflows; other repos get theirs from `templates/` |
 
