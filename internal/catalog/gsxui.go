@@ -44,7 +44,7 @@ func (p *Project) Gsxui() ([]GsxuiText, error) {
 			}
 			if !seen[text] {
 				seen[text] = true
-				out = append(out, GsxuiText{Text: text, File: filepath.Join(p.Config.Gsxui, filepath.Base(f)), Key: "gsxui." + snake(text)})
+				out = append(out, GsxuiText{Text: text, File: filepath.ToSlash(filepath.Join(p.Config.Gsxui, filepath.Base(f))), Key: "gsxui." + snake(text)})
 			}
 		}
 	}
