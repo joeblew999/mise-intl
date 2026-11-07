@@ -1,13 +1,14 @@
-# mise-intl for this repo, from its GitHub releases: mise install gets it. mise-intl init writes this file when the repo
-# has none, pinning exactly the release that ran it (here in the template it's latest); from then on the pin is the
-# repo's (a newer release's init, run by hand, moves it). A .mise/config.local.toml beside it, never committed,
+# mise-intl for this repo, from its GitHub releases: mise install gets it, and mise-check, whose own tasks mise-intl init
+# gives the repo (it runs mise-check init). mise-intl init writes this file when the repo has none, pinning exactly the
+# release that ran it (here in the template it's latest); from then on the pin is the repo's (a newer release's init,
+# run by hand, moves it). A .mise/config.local.toml beside it, never committed,
 # overrides it on one machine: mise-intl's own checkout pins its build there (local). The Go the tasks run with is
 # go.mod's.
 
 [settings]
 # The tools this repo takes the minute a release is out, never held back a day as every other tool's are
 # (minimum_release_age): mise matches no owner by a pattern, so each tool's init adds its own name, mise-intl's its.
-minimum_release_age_excludes = ["github:joeblew999/mise-intl"]
+minimum_release_age_excludes = ["github:joeblew999/mise-intl", "github:joeblew999/mise-check"]
 # A latest from GitHub's own list of releases, not mise's versions host, which lists a release some time after it's
 # out: latest is the newest the minute it's there (an exact pin lists none). mise-intl init adds this too.
 use_versions_host = false
@@ -16,3 +17,4 @@ idiomatic_version_file_enable_tools = ["go"]
 
 [tools]
 "github:joeblew999/mise-intl" = "latest"
+"github:joeblew999/mise-check" = "latest"

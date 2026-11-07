@@ -142,7 +142,9 @@ on each machine ([mise's getting started](https://mise.jdx.dev/getting-started.h
    - these docs, `docs/intl/README.md`, and the GitHub workflow, `.github/workflows/intl.yml`;
    - `intl.toml`, the source catalog and a catalog per language;
    - in a gsx app, intl's filters and renderers into `gsx.toml`;
-   - the generated files into `.gitignore`.
+   - the generated files into `.gitignore`;
+   - [mise-check](https://github.com/joeblew999/mise-check)'s own files, through its own init: its tasks
+     (`mise run mise-check`), its workflow, skill and docs, and its pin beside mise-intl's.
 
    `@latest` is the newest release once it's a day old (mise's minimum release age); name one instead (`@0.2.0`:
    they're all on [its releases](https://github.com/joeblew999/mise-intl/releases)). `intl:template` never writes

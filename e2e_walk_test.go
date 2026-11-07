@@ -43,9 +43,25 @@ func TestWalkNewRepo(t *testing.T) {
 // walkNew is whether the walk is on a new repo, which the steps that change the catalogs run on too.
 var walkNew bool
 
-// TestSteps checks that the steps are the template's numbered tasks, in their order, so the walk is that file's walk.
+// TestSteps checks that the walk is the template's whole walk: each step a task of its tasks file, and every other task
+// in notWalked, with why.
 func TestSteps(t *testing.T) {
-	walk.CheckSteps(t, "templates/.mise/tasks/mise-intl.toml", steps)
+	walk.CheckSteps(t, "templates/.mise/tasks/mise-intl.toml", steps, notWalked)
+}
+
+// notWalked are the template's tasks the walk takes no step for, each with why.
+var notWalked = map[string]string{
+	"intl":              "start here: it prints what intl:show does, the walk's intl:show step",
+	"intl:verify":       "the intl:check step runs it, from nothing installed, as the repo's own GitHub workflow does",
+	"intl:template":     "it makes a new repo's app, before the walk takes its steps (stampedCopy); the template is that app",
+	"intl:add":          "it copies intl's screens into a gsx app, and the template's app is plain Go",
+	"intl:assets":       "a Worker's and a page's JavaScript: TestWorker (mise run template:worker) runs it on a Worker",
+	"intl:daemon":       "pitchfork runs it, as intl's daemon, for every step that needs Intl",
+	"intl:locales":      "it only prints the languages, for another tool's task",
+	"intl:catalogs":     "it only prints the catalogs' package, for another tool's task",
+	"intl:markup":       "it only prints a gsx app's markup files, for gsx's checks",
+	"intl:show-version": "the walk's first line has it (versions)",
+	"intl:show-help":    "it only prints the commands",
 }
 
 // newRepo is a new repo, made the README's way: an empty folder with its own git, mise-intl init at the release

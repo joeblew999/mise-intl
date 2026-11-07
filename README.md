@@ -98,8 +98,10 @@ tasks` lists each with what it does.
 | `tool:build` | This checkout's build, `bin/mise-intl` | Any task needs it |
 | `tool:install` | That build as the mise version `local`, for any repo on this machine (`mise use github:joeblew999/mise-intl@local` there) and the template's (`templates/.mise/config.local.toml`, never committed) | To try a change in another repo, never by waiting on a release |
 | `tool:test` | `go vet`, the Go tests, the release config | After every change |
-| `tool:release` | A release from the commit checked out, as `release.yml` runs it; `--dry-run` tags and publishes nothing | Never by hand: a merge to main runs it |
-| `root:check-mise` | `TestRootMise` on this repo's own `mise.toml`, its mise side: one line each, the Go it runs there, `usage` passed by name, no POSIX shell syntax, so every task runs on Windows too | After a change to this repo's tasks |
+| `tool:release` | A release from the commit checked out, as `release.yml` runs it (mise-check's `release`); `--dry-run` tags and publishes nothing | Never by hand: a merge to main runs it |
+| `root:verify` | The checks and the walks: both mise files' misecheck, then `new-repo:e2e` (first, before anything starts pitchfork's supervisor), `tool:test` and `template:e2e` | Before every push |
+| `root:ci` | Exactly what GitHub's CI runs: `root:verify`, then `template:worker` | To run CI here |
+| `root:check-mise` | `TestRootMise` on this repo's own `mise.toml`, its mise side: one line each, the Go it runs there, `usage` passed by name, no POSIX shell syntax, so every task runs on Windows too; and the tool repo's shape (`CheckToolRepo`: `root:ci`, `root:verify`, a `ci.yml` that runs only `root:ci`, the README's opening) | After a change to this repo's tasks |
 
 This repo's pins, and the rules on its mise files, are [mise-check](https://github.com/joeblew999/mise-check)'s, through
 its own tasks, which `mise-check init` wrote into `.mise/` (`.mise/config.toml` pins it, at the release `go.mod`
@@ -140,7 +142,7 @@ points it at this repo's own `mise.toml`, its mise side only: the root runs Go, 
 | [intl/](intl/), [gsxintl/](gsxintl/) | other repos' | the packages an app imports (above) |
 | [internal/](internal/) | other repos' | the catalogs (`catalog`), a repo's setup (`setup`), intl's JS on Intl (`js`), the badge (`badge`) |
 | [e2e_walk_test.go](e2e_walk_test.go), [e2e_steps_test.go](e2e_steps_test.go), [e2e_mise_test.go](e2e_mise_test.go) | this repo's | the walk, on [mise-check's `walk`](https://github.com/joeblew999/mise-check#use-walk), which runs the steps in their order and does everything that isn't intl's: `TestWalk`; the steps, each with its check; what's intl's in making a repo |
-| [tool_test.go](tool_test.go) | this repo's | `TestToolRelease`, the release: only `mise run tool:release` runs it |
+| [tool_test.go](tool_test.go) | this repo's | `TestToolRelease`, the release (mise-check's `release.Run`): only `mise run tool:release` runs it |
 | [mise_test.go](mise_test.go) | this repo's | `TestRootMise` and `TestTemplateMise`: [mise-check's `misecheck`](https://github.com/joeblew999/mise-check) on a mise file of this repo and the Go it runs, both ways |
 | [workerd_test.go](workerd_test.go), [gsx_test.go](gsx_test.go) | this repo's | the workerd the template pins; intl's packages without gsx |
 | [worker_test.go](worker_test.go) | this repo's | `TestWorker`: the template's app on a Cloudflare Worker, in local workerd (only `mise run template:worker` runs it) |
@@ -151,9 +153,8 @@ points it at this repo's own `mise.toml`, its mise side only: the root runs Go, 
 Shell steps only, no JavaScript actions. Each workflow checks out and installs mise, then only runs the root mise, as
 on any machine:
 
-- [ci.yml](.github/workflows/ci.yml), on every push and pull request, on Linux, macOS and Windows: `new-repo:e2e` first
-  (no pitchfork supervisor yet, as on a person's machine), then `template:setup`, `tool:test`, `template:check-mise`,
-  `root:check-mise`, `template:e2e` and `template:worker`.
+- [ci.yml](.github/workflows/ci.yml), on a push to main and on a pull request, on Linux, macOS and Windows: `mise run
+  root:ci`, and nothing else.
 - [release.yml](.github/workflows/release.yml), on every change to the tool merged to main: `tool:release`. It takes
   the commit's `v*` tag or tags the next patch version, [goreleaser](.goreleaser.yaml) puts the `mise-intl` binary for
   macOS, Linux and Windows on the release, a new repo made pinning that release is walked (`new-repo:e2e --version`),

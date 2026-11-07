@@ -14,9 +14,8 @@ import (
 )
 
 // steps are the repo's tasks (its .mise/tasks/mise-intl.toml, which is the template's,
-// templates/.mise/tasks/mise-intl.toml), in their order, each with its check: how the walk runs it and checks it did
-// what it says, as a person would see it. TestSteps fails unless they're exactly the template's numbered tasks, in
-// their order.
+// templates/.mise/tasks/mise-intl.toml), in a person's order, each with its check: how the walk runs it and checks it did
+// what it says, as a person would see it. TestSteps fails unless they and notWalked are every task of the template's.
 var steps = []walk.Step[*walker]{
 	{Task: "intl:init", Check: func(w *walker) {
 		before := w.Snapshot(local...)

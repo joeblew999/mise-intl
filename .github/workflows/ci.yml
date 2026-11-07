@@ -1,12 +1,12 @@
-# mise-intl's CI: every check, on the template (templates) and on a new repo made from it (made by the walk), on Linux,
-# macOS and Windows side by side, so a problem on one shows before a release (which never waits for CI).
-# Shell steps only, as mise-cloudflare's: no JavaScript actions.
+# mise-intl's CI: mise run root:ci, every check and walk, on Linux, macOS and Windows side by side, so a problem on one
+# shows before a release (which never waits for CI). Shell steps only, as mise-check's: no JavaScript actions.
 name: ci
 
+# Once a change: a push to main, or a pull request (again for each push to its branch). Never a branch's push and its
+# pull request both, nor a tag, whose commit main's push ran already.
 on:
   push:
-    tags: ["**"]
-    branches: ["**"]
+    branches: [main]
   pull_request:
 
 permissions:
@@ -18,7 +18,6 @@ concurrency:
 
 jobs:
   test:
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     strategy:
       fail-fast: false
       matrix:
@@ -57,20 +56,5 @@ jobs:
           mise --version
           mise install
 
-      # First, as on a person's machine with no pitchfork supervisor yet: the new repo's own commands start it, and its
-      # folder still goes when the walk ends.
-      - name: A new repo made as a person makes one - the walk, on it (mise run new-repo:e2e)
-        run: mise run new-repo:e2e
-
-      - name: The tool's own tests (mise run tool:test, after template:setup, whose workerd they run Intl on), and the mise files and the Go lined up, the template's and this repo's (mise run template:check-mise, root:check-mise)
-        run: |
-          mise run template:setup
-          mise run tool:test
-          mise run template:check-mise
-          mise run root:check-mise
-
-      - name: The template, templates - the walk, its tasks in a person's order, what its own workflow runs included (mise run template:e2e)
-        run: mise run template:e2e
-
-      - name: The template's app on a Cloudflare Worker, in local workerd, on the Worker's own Intl (mise run template:worker)
-        run: mise run template:worker
+      - name: Everything, as on any machine (mise run root:ci)
+        run: mise run root:ci

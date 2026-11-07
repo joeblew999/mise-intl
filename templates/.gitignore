@@ -10,3 +10,4 @@ intl-workerd/
 /xliff/
 # aube install (package.json: workerd)
 node_modules/
+.DS_Store

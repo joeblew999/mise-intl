@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/joeblew999/mise-check/toolfiles"
 	"github.com/joeblew999/mise-intl/internal/catalog"
 	"github.com/joeblew999/mise-intl/internal/setup"
 	"github.com/joeblew999/mise-intl/intl/config"
@@ -144,7 +145,7 @@ func npmName(folder string) string {
 // and aube for it first), then go mod tidy puts the app's imports in go.mod and go.sum. Without a setup task, it says
 // how instead.
 func setUpApp(root string) {
-	trustConfig(root, "mise.toml")
+	toolfiles.Trust(root, "mise.toml", nil)
 	has := exec.Command("mise", "tasks", "info", "setup")
 	has.Dir = root
 	if has.Run() != nil {
