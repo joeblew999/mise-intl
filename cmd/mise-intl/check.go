@@ -57,9 +57,8 @@ func checkLocales(c config.Config, ids []string) int {
 	}
 	locs := pick(p, ids)
 	problems := localeProblems(p, locs)
-	stop := startIntl()
+	startIntl()
 	pl, err := intltest.PluralProblems(p)
-	stop()
 	must(err)
 	for _, s := range pl {
 		for _, l := range locs {
@@ -135,7 +134,7 @@ func checkAll(c config.Config, warnMissing bool) int {
 		add(fmt.Sprintf("%s: no Go or gsx file uses it (%s.%s): remove it from every catalog", k, filepath.Base(c.CatalogDir()), catalog.GoName(k)))
 	}
 	add(stale(c.Root)...) // intl's files, as this version writes them
-	stop := startIntl()
+	startIntl()
 	pl, err := intltest.PluralProblems(p)
 	must(err)
 	add(pl...)
@@ -157,7 +156,6 @@ func checkAll(c config.Config, warnMissing bool) int {
 			add(fmt.Sprintf("%s: %q isn't a locale id as Intl writes it (%s)", config.File, id, canon))
 		}
 	}
-	stop()
 	for _, s := range warnings {
 		fmt.Println("·", s)
 	}

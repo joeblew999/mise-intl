@@ -1,0 +1,9 @@
+# The app's daemons, which pitchfork runs (mise.toml pins it). intl: Intl outside a Cloudflare Worker, for the app, its
+# tests and mise-intl: workerd serving the files mise-intl gen writes (locales/intl-workerd), through the repo's own
+# mise (mise run intl:daemon, after gen). intl starts it when nothing answers (pitchfork start intl), on 8749 or the
+# next free port, and it restarts when gen rewrites those files; pitchfork stop intl stops it.
+[daemons.intl]
+run = ["mise", "run", "intl:daemon"]
+port = { expect = [8749], bump = true }
+ready_output = { pattern = "intl: workerd answers", timeout = "120s" }
+watch = ["locales/intl-workerd/*"]

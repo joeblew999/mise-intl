@@ -32,12 +32,13 @@ skills.fetch = false
 node = "26.13.0"
 aube = { version = "2.9.0", workflow = ["release-plz.yml@refs/heads/main", "release.yml@refs/heads/main"] }
 usage = { version = "7.2.0", workflow = "publish-cli.yml" }    # --help and tab-completion for the tasks' flags
+pitchfork = "2.33.1"   # runs the template's intl daemon (templates/pitchfork.toml), this repo's tests' Intl
 goreleaser = "2.20.0"   # the release's binaries (.goreleaser.yaml)
 
 [env]
-# intl's Intl outside a Worker, for this repo's go test: the template's workerd (intl/workerd finds its native binary
-# from this .bin)
-_.path = ["{{config_root}}/templates/node_modules/.bin"]
+# intl's Intl outside a Worker, for this repo's go test: the template's intl daemon (templates/pitchfork.toml), which
+# runs its workerd (templates/node_modules)
+INTL_PITCHFORK_DIR = "{{config_root}}/templates"
 
 [tasks."template:setup"]
 description = "The template's own setup, by its own task (mise run setup, in templates/; its Go is this module's, go.mod's toolchain line): workerd from its package.json in templates/node_modules (aube install), the one intl's Intl runs on in this repo's tests and the walk. The machine's .mise/config.local.toml ignored, and the template's pin of mise-intl, which its setup doesn't run (so it works before mise-intl's first release)"
@@ -76,8 +77,8 @@ depends = ["tool:build"]
 run = "mise link -f github:joeblew999/mise-intl@local {{config_root}}/bin && mise use -q --path {{config_root}}/templates/.mise/config.local.toml github:joeblew999/mise-intl@local"
 
 [tasks."tool:test"]
-description = "go vet, every Go test, run for real (no cached results), and the release config: the walks run only when named, so they need nothing but this file's tools; Intl comes from the template's workerd (template:setup)"
-depends = ["template:gen"]
+description = "go vet, every Go test, run for real (no cached results), and the release config: the walks run only when named, so they need nothing but this file's tools; Intl comes from the template's intl daemon (templates/pitchfork.toml), its workerd (template:setup) run by this checkout's build (tool:install)"
+depends = ["template:gen", "tool:install"]
 run = "go vet ./... && go test -count=1 ./... && goreleaser check"
 
 [tasks."tool:release"]

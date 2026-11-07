@@ -58,6 +58,7 @@ func newRepo(r walk.Repo, version string) walk.Repo {
 // walk cuts mise off from the repo around it, so its own mise files have no Go to give its tasks; the Go this test runs
 // with is that module's. A new repo has a go.mod of its own, whose Go mise installs.
 func prepare(r walk.Repo) walk.Repo {
+	r.With = append(r.With, "INTL_PITCHFORK_DIR=") // the repo's own intl daemon, not this repo's tests' (mise.toml)
 	if _, err := os.Stat(filepath.Join(r.Dir, "go.mod")); err == nil {
 		return r
 	}
@@ -78,6 +79,7 @@ const newOnly = "it changes the catalogs, so the walk runs it on a new repo (mis
 // walkOf is the walk of a repo the walk has set up (mise install, then its setup task): first, what it runs.
 func walkOf(r walk.Repo) *walker {
 	w := &walker{repo: repo{Repo: r}, inPlace: !walkNew}
+	w.T.Cleanup(func() { w.Run(nil, "pitchfork", "stop", "intl") }) // its intl daemon, before its folder goes
 	w.Pass("%s runs %s", w.Name, w.versions())
 	return w
 }

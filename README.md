@@ -45,7 +45,7 @@ The command is the binary; the app's Go imports intl's packages, from this modul
 | Package (`github.com/joeblew999/mise-intl/…`) | For | Imports gsx? |
 |---|---|---|
 | `intl` | every app: messages, languages, the middleware (`intl.Site`), `intl.Text` and the formatting calls | no |
-| `intl/workerd` | apps not on Cloudflare: Intl from workerd, the native one in the repo's `node_modules` | no |
+| `intl/workerd` | apps not on Cloudflare: Intl from workerd, the repo's intl daemon (pitchfork runs it) | no |
 | `intl/intltest` | apps' tests | no |
 | `intl/config` | tools that read an app's `intl.toml` | no |
 | `gsxintl` | gsx apps: `Head`, `HTML`, `Attrs` and the renderer `gsx.toml` names | **yes, the only one** |
@@ -74,9 +74,11 @@ run the furthest you need, here, never waiting on GitHub. In this checkout the t
 ### Rules
 
 - Intl is the one source of language: messages, plurals, numbers, dates, names and direction all come from the
-  runtime's `Intl` (`internal/js`), never from Go. Off Cloudflare it is workerd's, the one `package.json` pins.
+  runtime's `Intl` (`internal/js`), never from Go. Off Cloudflare it is workerd's, the one `package.json` pins, which
+  pitchfork runs as the repo's intl daemon (`pitchfork.toml`); this repo's tests use the template's
+  (`INTL_PITCHFORK_DIR`, in `mise.toml`).
 - intl's packages never import gsx, but `gsxintl`: an app without gsx gets none.
-- Every tool is pinned, and comes from mise: mise-intl in `.mise/config.toml`, workerd in `package.json` (aube), Go
+- Every tool is pinned, and comes from mise: mise-intl in `.mise/config.toml`, pitchfork in `mise.toml`, workerd in `package.json` (aube), Go
   in `go.mod`. No Node script of ours, and no `npm`.
 - Test the real thing: workerd's Intl, the real catalogs, the template's app served and read, never a fake.
 

@@ -8,7 +8,7 @@ import (
 
 	"github.com/joeblew999/mise-intl/internal/catalog"
 	"github.com/joeblew999/mise-intl/intl/config"
-	"github.com/joeblew999/mise-intl/intl/intltest"
+	"github.com/joeblew999/mise-intl/intl/workerd"
 )
 
 // writeChanged writes b to path unless it holds b already, and names what it wrote relative to root.
@@ -51,12 +51,11 @@ func pick(p *catalog.Project, ids []string) []*catalog.Locale {
 	return out
 }
 
-func startIntl() func() {
-	stop, err := intltest.StartIntl()
-	if err != nil {
-		fail(fmt.Errorf("intl: Intl needs workerd (mise run setup installs it from package.json): %w", err))
+// startIntl sets intl's Intl: the repo's intl daemon (workerd.Start), which stays for every command after.
+func startIntl() {
+	if err := workerd.Start(); err != nil {
+		fail(fmt.Errorf("intl: Intl needs workerd: %w", err))
 	}
-	return stop
 }
 
 func must(err error) {

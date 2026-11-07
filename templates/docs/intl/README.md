@@ -34,7 +34,7 @@ style, a slider whose value is written in kilometres, need no request and no Go:
 ```
 
 Go decides nothing about a language: no CLDR tables, no formatting of its own. Outside a Worker (an ordinary Go
-server, `go test`, the tooling) the Intl is workerd's, the same V8, which intl starts itself (`intl/workerd`).
+server, `go test`, the tooling) the Intl is workerd's, the same V8, run as the repo's intl daemon (`intl/workerd`).
 
 ## What the repo needs: mise
 
@@ -43,14 +43,17 @@ Every tool comes from mise, intl's command among them: `mise-intl`, a binary on
 `.mise/config.toml` pins (`init` writes the pin), as mise-cloudflare's repos get theirs.
 
 workerd, which intl's Intl runs on outside a Worker, is an npm package: the repo's `package.json` pins it and aube
-installs it (`mise run setup`: `aube install`), with node and aube from `mise.toml`, as the template's app has them. A
-repo with an app of its own adds it: `aube add -D workerd@1.20261104.1`.
+installs it (`mise run setup`: `aube install`), with node and aube from `mise.toml`, as the template's app has them. It
+runs as a daemon, which [pitchfork](https://pitchfork.jdx.dev) runs (`mise.toml` pins it too): `pitchfork.toml`'s
+`intl` runs `mise run intl:daemon`, workerd serving the files `mise-intl gen` writes beside the catalogs
+(`intl-workerd/`), restarted when gen rewrites them. A repo with an app of its own adds them: `aube add -D
+workerd@1.20261104.1`, `pitchfork` in its `mise.toml`, and the template's `pitchfork.toml`.
 
 | | How | Checked by |
 |---|---|---|
 | The command | `mise-intl <command>`: the binary of the release `.mise/config.toml` pins (`"github:joeblew999/mise-intl"`) | mise (the release's checksums) |
 | The packages an app imports | `github.com/joeblew999/mise-intl/intl` (and `gsxintl`, in a gsx app), the same release, which `init` and `intl:template` require in `go.mod` | `go.sum` and the compiler |
-| Intl, off Cloudflare | workerd, from npm: the repo's `package.json` pins it, aube installs it (`INTL_WORKERD` names one of your own) | the lockfile |
+| Intl, off Cloudflare | workerd, from npm: the repo's `package.json` pins it, aube installs it (`INTL_WORKERD` names one of your own); pitchfork runs it, `pitchfork.toml`'s `intl` daemon | the lockfile |
 | Go itself | `go.mod`'s `toolchain` line (or its `go` line), which `.mise/config.toml` has mise install | mise |
 
 Each command is a task too, numbered in the order a repo meets them: `mise run intl:06-gen` runs `mise-intl gen`.
@@ -111,9 +114,9 @@ server and `gsx info` see it like any project code:
 ## Set up an app
 
 intl needs Go 1.26 or newer, the same as gsx. [mise](https://mise.jdx.dev) brings every tool: mise-intl (the release
-`.mise/config.toml` pins), Go (from `go.mod`, which `init` tells mise to use), gsx, and node and aube, which install
-[workerd](https://github.com/cloudflare/workerd) from `package.json`: its Intl is what the tooling, the tests and an
-ordinary Go server run on.
+`.mise/config.toml` pins), Go (from `go.mod`, which `init` tells mise to use), gsx, node and aube, which install
+[workerd](https://github.com/cloudflare/workerd) from `package.json`, and pitchfork, which runs it: its Intl is what the
+tooling, the tests and an ordinary Go server run on.
 Translating with Claude also needs [Claude Code](https://code.claude.com) (`claude`) installed.
 
 At the repository's root (GitHub and Claude Code read `.github/` and `.claude/` only there), with mise installed once
@@ -194,23 +197,18 @@ on each machine ([mise's getting started](https://mise.jdx.dev/getting-started.h
 
 4. Give intl its Intl.
 
-   On an ordinary Go server, start workerd's before serving, with the catalogs `mise-intl gen` embeds in your
-   messages package (`intl_messages_gen.go`). intl runs the workerd in the repo's `node_modules` (`aube install`, from
-   `package.json`), found up from the working directory; in an image without it, put workerd's release binary there
-   and name it with `INTL_WORKERD`. Each formatted value is a request to it on 127.0.0.1, about 0.1 ms:
+   On an ordinary Go server, set workerd's before serving. It is the repo's intl daemon: `Start` starts it when it
+   isn't running (`pitchfork start intl`, through the repo's own mise: gen, then workerd on gen's files, from the
+   `node_modules` `aube install` filled), and it stays for every process after, restarting when gen rewrites the
+   catalogs; `pitchfork stop intl` stops it. A server deployed without the repo runs a workerd of its own on the same
+   files (`workerd serve intl-workerd/intl-workerd.capnp`) and names it with `INTL_WORKERD_URL`. Each formatted value
+   is a request to it on 127.0.0.1, about 0.1 ms:
 
    ```go
-   stop, err := workerd.Start(locales.Messages) // github.com/joeblew999/mise-intl/intl/workerd
-   if err != nil {
+   if err := workerd.Start(); err != nil { // github.com/joeblew999/mise-intl/intl/workerd
    	log.Fatal(err)
    }
-   defer stop()
    ```
-
-   workerd ends with your server however the server ends: `stop`, `log.Fatal`, a panic, or a kill. It runs under a
-   small shell that ends it when your process goes; with no shell (a minimal image), Linux's parent-death signal does,
-   and anything left over goes at the next `Start`. Run the server binary itself under your process manager: `mise
-   exec -- ./server` doesn't pass a stop signal on to it.
 
    On Cloudflare Workers, the Worker's own Intl: its entry module puts intl's formatter where Go calls it, and the
    build copies the JavaScript (embedded in the module):
@@ -228,7 +226,7 @@ on each machine ([mise's getting started](https://mise.jdx.dev/getting-started.h
    static` copies them. Copy them in your build and keep them out of git, like other generated files: they come
    with the intl version in `go.mod`.
 
-5. Test with workerd's Intl, in every package that renders:
+5. Test with workerd's Intl, the same daemon, in every package that renders:
 
    ```go
    func TestMain(m *testing.M) { os.Exit(intltest.Main(m)) }
@@ -392,6 +390,7 @@ Numbered in the order a repo meets them; each runs the command of its name.
 | `intl:verify` | `mise-intl verify` | What GitHub runs: the repo's setup and test tasks, then check |
 | `intl:template` | `mise-intl template` | The template's little app, in a repo with no app yet |
 | `intl:add` | `mise-intl add` | In a gsx app: intl's screens (`--diff`, `--overwrite`) |
+| `intl:daemon` | `mise-intl daemon` | Intl outside a Worker: workerd on gen's files, in the foreground, which `pitchfork.toml`'s `intl` daemon runs |
 | `intl:assets` | `mise-intl assets` | The JavaScript a Worker and a page import (`--worker`, `--browser`) |
 | `intl:show-help` | `mise-intl show-help` | Every command |
 

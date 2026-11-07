@@ -116,6 +116,7 @@ it says what's done and what to run next.
 | `mise run intl:verify` | before every push | what `.github/workflows/intl.yml` runs on GitHub: the repo's `setup` and `test`, then check |
 | `mise run intl:template` | only in a repo with no app yet | the template's little app; it never writes over a file |
 | `mise run intl:add` | for a language list, the language offer, or preferences | intl's screens copied into a gsx app, their text translated |
+| `mise run intl:daemon` | never by hand: pitchfork runs it (`pitchfork start intl`, which intl does when nothing answers; `pitchfork stop intl`) | Intl outside a Worker: workerd serving it on the files gen writes |
 | `mise run intl:assets` | for a Worker build or a page's own modules | the JavaScript they import: intl's, and the app's catalogs |
 | `mise run intl:locales` | to list the shipped languages | them, comma-separated |
 | `mise run intl:catalogs` | to name the catalogs' Go package | its name |

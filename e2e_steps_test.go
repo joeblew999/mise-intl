@@ -30,7 +30,9 @@ var steps = []walk.Step[*walker]{
 			w.T.Fatalf("intl:04-check: %s", out)
 		}
 		w.Pass("intl:04-check: no problem")
-		// As on GitHub, from a fresh checkout: nothing installed, so verify's own setup has to install workerd.
+		// As on GitHub, from a fresh checkout: no intl daemon running and nothing installed, so verify's own setup has
+		// to install workerd, and check start the daemon on it.
+		w.Must("pitchfork", "stop", "intl")
 		if err := os.RemoveAll(filepath.Join(w.Dir, "node_modules")); err != nil {
 			w.T.Fatal(err)
 		}

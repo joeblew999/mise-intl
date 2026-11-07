@@ -39,6 +39,7 @@ And:
   mise-intl template        the template's little app, in a repo with no app yet: it never writes over a file
   mise-intl add             intl's screens, in a gsx app (--diff, --overwrite): language-list, language-offer, preferences
   mise-intl assets          the JavaScript a Worker and a page import (--worker dir, --browser dir)
+  mise-intl daemon          workerd serving Intl outside a Worker, in the foreground: what pitchfork.toml's intl daemon runs
   mise-intl locales         the shipped locales, comma-separated
   mise-intl catalogs        the catalogs' Go package name
   mise-intl markup          the app's own markup files, for gsx's checks
@@ -85,6 +86,8 @@ func main() {
 		add(args)
 	case "assets":
 		assets(args)
+	case "daemon":
+		daemon(args)
 	case "locales":
 		locales(args)
 	case "catalogs":

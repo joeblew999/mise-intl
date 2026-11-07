@@ -77,7 +77,7 @@ func TestInitFresh(t *testing.T) {
 	if _, err := toml.Decode(read(t, root, "gsx.toml"), &g); err != nil || g.Renderers["example.com/shop/ui/i18n.T"] != "example.com/shop/ui/i18n.Translate" {
 		t.Errorf("gsx.toml with gsxui's i18n: %+v %v", g, err)
 	}
-	if s := read(t, root, ".gitignore"); !strings.Contains(s, "\nintl_gen.go\nintl_messages_gen.go\nintl-messages.mjs\n") {
+	if s := read(t, root, ".gitignore"); !strings.Contains(s, "\nintl_gen.go\nintl-messages.mjs\nintl-workerd/\n") {
 		t.Errorf(".gitignore:\n%s", s)
 	}
 	// No mise.toml: Go's version for mise is the app's own (the template's app has it, mise-intl template), and

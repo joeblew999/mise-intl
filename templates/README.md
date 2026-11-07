@@ -9,6 +9,7 @@ runtime's own Intl writes in the reader's language, dates, prices, lists, relati
 - `mise-intl` (`mise run intl`): what's done for the app's languages, and what to run next.
 - [docs/intl/README.md](docs/intl/README.md): intl in this repo, every command.
 
-Every tool comes from mise: `.mise/config.toml` pins mise-intl (and Go, `go.mod`'s), `mise.toml` pins node and aube,
-and `mise run setup` installs workerd, which intl's Intl runs on, from `package.json` (`aube install`), and the modules
-`go.mod` pins, intl's packages among them.
+Every tool comes from mise: `.mise/config.toml` pins mise-intl (and Go, `go.mod`'s), `mise.toml` pins node, aube and
+pitchfork, and `mise run setup` installs workerd, which intl's Intl runs on, from `package.json` (`aube install`), and
+the modules `go.mod` pins, intl's packages among them. pitchfork runs workerd as the app's intl daemon
+(`pitchfork.toml`): the app and its tests start it when it isn't running, and `pitchfork stop intl` stops it.

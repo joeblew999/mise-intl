@@ -4,15 +4,13 @@
 //
 //	func TestMain(m *testing.M) { os.Exit(intltest.Main(m)) }
 //
-// workerd must be on PATH (mise installs it); the catalogs are the ones mise-intl gen wrote, found through the
-// app's intl.toml (none without one).
+// It is the repo's intl daemon (workerd.Start: pitchfork runs it, with the catalogs mise-intl gen wrote).
 package intltest
 
 import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -23,30 +21,15 @@ import (
 	"github.com/joeblew999/mise-intl/intl/workerd"
 )
 
-// Main starts workerd, runs the tests with it as intl.Runtime, and stops it.
+// Main runs the tests with workerd's Intl as intl.Runtime: the repo's intl daemon, with the catalogs gen wrote
+// (workerd.Start).
 func Main(m *testing.M) int {
-	stop, err := Start()
-	if err != nil {
+	if err := workerd.Start(); err != nil {
 		fmt.Fprintln(os.Stderr, "intltest:", err)
 		return 1
 	}
-	defer stop()
 	return m.Run()
 }
-
-// Start starts workerd with the app's catalogs (intl.toml's, read from disk; none without one) as intl.Runtime.
-func Start() (stop func(), err error) {
-	catalogs := []byte("export default {};\n")
-	if c, err := config.Find("."); err == nil {
-		if catalogs, err = readCatalogs(c); err != nil {
-			return nil, err
-		}
-	}
-	return workerd.Start(catalogs)
-}
-
-// StartIntl starts workerd's Intl without the app's catalogs (mise-intl, before they are compiled).
-func StartIntl() (stop func(), err error) { return workerd.Start([]byte("export default {};\n")) }
 
 // Plurals checks that every plural and selectordinal in the app's catalogs has a case for each category its
 // language's Intl.PluralRules uses (Russian needs one, few, many and other):
@@ -117,14 +100,6 @@ func PluralProblems(p *catalog.Project) ([]string, error) {
 		}
 	}
 	return out, nil
-}
-
-func readCatalogs(c config.Config) ([]byte, error) {
-	b, err := os.ReadFile(filepath.Join(c.CatalogDir(), "intl-messages.mjs"))
-	if err != nil {
-		return nil, fmt.Errorf("%w: run mise-intl gen", err)
-	}
-	return b, nil
 }
 
 // Tree formats a message tree as mise-intl gen writes it (js/intl.mjs message) in lang with args.

@@ -85,6 +85,11 @@ description = "The JavaScript a Worker and a page import: intl's own, and the ap
 usage = 'flag "--worker <dir>" help="the folder for a Worker build: its modules"; flag "--browser <dir>" help="the folder a page loads its modules from"'
 run = 'mise-intl assets{% if usage.worker %} --worker "{{usage.worker}}"{% endif %}{% if usage.browser %} --browser "{{usage.browser}}"{% endif %}'
 
+["intl:daemon"]
+description = "Intl outside a Worker: workerd serving it on the files gen writes, in the foreground. pitchfork.toml's intl daemon runs it (pitchfork start intl; intl starts it when nothing answers)"
+depends = ["intl:06-gen"]
+run = "mise-intl daemon"
+
 ["intl:locales"]
 description = "The shipped languages, comma-separated"
 run = "mise-intl locales"

@@ -2,20 +2,18 @@
 // js/intl-worker.mjs with the app's catalogs, set as intl.Runtime. On a Worker, Intl is the Worker's own; anywhere
 // else (an ordinary Go server, go test, mise-intl) it is this one, so every place formats with the same engine.
 //
-// An app on an ordinary Go server starts it before serving, with the catalogs mise-intl gen embedded in its
-// messages package:
+// An app on an ordinary Go server starts it before serving:
 //
-//	stop, err := workerd.Start(locales.Messages)
-//	if err != nil {
+//	if err := workerd.Start(); err != nil {
 //		log.Fatal(err)
 //	}
-//	defer stop()
 //
-// workerd comes from npm, as mise-cloudflare's template gets wrangler: the repo's package.json pins it at Version (the
-// template's app's does, mise-intl template), aube installs it (mise run setup), and intl runs the native workerd
-// of the node_modules nearest the working directory, or of the one whose .bin is on the PATH (Path). INTL_WORKERD names
-// a workerd of your own instead (a server's image built without node_modules). Each Intl call is a request to it on
-// 127.0.0.1, about 0.1 ms. It ends with the process that started it, however that process ends (launch).
+// workerd runs as the repo's intl daemon, which pitchfork runs (pitchfork.toml, the template's app has it): workerd
+// serving the files mise-intl gen writes beside the catalogs (intl-workerd/), started by the first Start when it isn't
+// running (pitchfork start intl), restarted when gen rewrites them, stopped with pitchfork stop intl. INTL_WORKERD_URL
+// names a workerd of your own instead (a server's, deployed with it). workerd comes from npm, as mise-cloudflare's
+// template gets wrangler: the repo's package.json pins it at Version, aube installs it (mise run setup), and the daemon
+// runs its native binary (Path). Each Intl call is a request to it on 127.0.0.1, about 0.1 ms.
 package workerd
 
 import (
@@ -24,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -33,12 +30,8 @@ import (
 	"strings"
 	"time"
 
-	intljs "github.com/joeblew999/mise-intl/internal/js"
 	"github.com/joeblew999/mise-intl/intl"
 )
-
-// CompatibilityDate is the Workers compatibility date the Intl Worker runs on.
-const CompatibilityDate = "2026-09-11"
 
 // Version is the workerd release intl is tested with: the template's package.json pins it (TestWorkerdPins).
 const Version = "1.20261104.1"
@@ -113,96 +106,22 @@ func isBinary(p string) bool {
 // noWorkerd says how to get workerd.
 const noWorkerd = "workerd, the Workers runtime whose Intl intl runs on outside a Worker, isn't installed: the repo's package.json pins it (devDependencies, \"workerd\": \"" + Version + "\", as the template's app has it) and aube installs it (mise run setup, the template's mise.toml has node and aube), or set INTL_WORKERD to a workerd of your own"
 
+// noDaemon says how to get the intl daemon.
+const noDaemon = "intl's Intl outside a Worker is the repo's intl daemon: pitchfork runs it (the template's mise.toml pins pitchfork, and its pitchfork.toml has the daemon, [daemons.intl]; run through mise: mise run serve), or set INTL_WORKERD_URL to a workerd of your own"
+
 var (
 	base   string
 	client = &http.Client{Transport: &http.Transport{MaxIdleConnsPerHost: 32}, Timeout: 10 * time.Second}
 )
 
-// Start starts workerd serving intl's JS with catalogs (an app's intl-messages.mjs: its messages package's
-// Messages; "export default {};" for none) and sets intl.Runtime to it. stop ends it.
-func Start(catalogs []byte) (stop func(), err error) {
-	workerd, err := Path()
-	if err != nil {
-		return nil, err
-	}
-	dir, err := os.MkdirTemp("", "intl-workerd-")
-	if err != nil {
-		return nil, err
-	}
-	if err := os.CopyFS(dir, intljs.FS); err != nil {
-		return nil, err
-	}
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		return nil, err
-	}
-	addr := l.Addr().String()
-	l.Close()
-	files := map[string]string{
-		"intl-messages.mjs": string(catalogs),
-		"main.mjs": `import { goIntl } from "./intl-worker.mjs";
-import * as intl from "./intl.mjs";
-export default {
-  async fetch(req) {
-    if (req.method !== "POST") return new Response("ok");
-    const { method, args, tree } = await req.json();
-    if (method === "tree") return new Response(intl.message(args[0], tree, args.slice(1)));
-    if (typeof goIntl[method] !== "function") return new Response("no method " + method, { status: 400 });
-    return new Response(String(goIntl[method](...args)));
-  },
-};
-`,
-		"config.capnp": `using Workerd = import "/workerd/workerd.capnp";
-const config :Workerd.Config = (
-  services = [(name = "main", worker = (
-    modules = [
-      (name = "main.mjs", esModule = embed "main.mjs"),
-      (name = "intl-worker.mjs", esModule = embed "intl-worker.mjs"),
-      (name = "intl.mjs", esModule = embed "intl.mjs"),
-      (name = "intl-messages.mjs", esModule = embed "intl-messages.mjs"),
-    ],
-    compatibilityDate = "` + CompatibilityDate + `"))],
-  sockets = [(name = "http", address = "` + addr + `", http = (), service = "main")],
-);
-`,
-	}
-	for name, s := range files {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte(s), 0o644); err != nil {
-			return nil, err
-		}
-	}
-	var errs bytes.Buffer
-	reapOrphans()
-	c, err := launch(workerd, dir, io.MultiWriter(os.Stderr, &errs))
-	if err != nil {
-		return nil, err
-	}
-	// Who owns this workerd: launch ends it when this process ends, and a leftover (a system with no shell and no
-	// parent-death signal) goes at the next Start's reapOrphans.
-	os.WriteFile(filepath.Join(dir, "owner"), []byte(fmt.Sprintf("%d %d", os.Getpid(), c.pid())), 0o644)
-	exited := c.exited
-	stop = func() {
-		c.stop()
-		os.RemoveAll(dir)
-	}
-	base = "http://" + addr
-	for deadline := time.Now().Add(20 * time.Second); ; time.Sleep(50 * time.Millisecond) {
-		if resp, err := client.Get(base); err == nil {
-			resp.Body.Close()
-			break
-		}
-		select {
-		case <-exited: // it didn't start: a mise shim with no version for this folder, a bad config
-			os.RemoveAll(dir)
-			if strings.Contains(errs.String(), "No version is set") {
-				return nil, errors.New(noWorkerd)
-			}
-			return nil, fmt.Errorf("workerd exited: %s", strings.TrimSpace(errs.String()))
-		default:
-		}
-		if time.Now().After(deadline) {
-			stop()
-			return nil, fmt.Errorf("workerd didn't answer on %s", addr)
+// Start sets intl.Runtime to workerd's Intl: INTL_WORKERD_URL's, or else the repo's intl daemon, started first when it
+// isn't running (pitchfork start intl), in the folder INTL_PITCHFORK_DIR names (this repo's own tests: the template's)
+// or else the working directory's pitchfork.toml.
+func Start() error {
+	if base = strings.TrimSuffix(os.Getenv("INTL_WORKERD_URL"), "/"); base == "" {
+		var err error
+		if base, err = daemon(); err != nil {
+			return err
 		}
 	}
 	// As on a Worker, an Intl that can't answer gives "" (the value's machine form shows); the reason goes to stderr.
@@ -214,7 +133,33 @@ const config :Workerd.Config = (
 		}
 		return s
 	}
-	return stop, nil
+	return nil
+}
+
+// daemon starts the repo's intl daemon when it isn't running, and returns its URL, on the port pitchfork gave it.
+func daemon() (string, error) {
+	pitchfork := func(args ...string) ([]byte, error) {
+		cmd := exec.Command("pitchfork", args...)
+		var errs bytes.Buffer
+		cmd.Dir, cmd.Stderr = os.Getenv("INTL_PITCHFORK_DIR"), &errs
+		out, err := cmd.Output()
+		if err != nil {
+			return nil, fmt.Errorf("pitchfork %s: %v: %s\n%s", strings.Join(args, " "), err, bytes.TrimSpace(append(out, errs.Bytes()...)), noDaemon)
+		}
+		return out, nil
+	}
+	if _, err := pitchfork("start", "-q", "intl"); err != nil {
+		return "", err
+	}
+	out, err := pitchfork("status", "--json", "intl")
+	if err != nil {
+		return "", err
+	}
+	var s struct{ Port []int }
+	if i := bytes.IndexByte(out, '{'); i < 0 || json.Unmarshal(out[i:], &s) != nil || len(s.Port) == 0 {
+		return "", fmt.Errorf("pitchfork status intl gives no port: %s", out)
+	}
+	return fmt.Sprintf("http://127.0.0.1:%d", s.Port[0]), nil
 }
 
 // Tree formats a message tree as mise-intl gen writes it (js/intl.mjs message) in lang with args: for tests of
@@ -229,6 +174,11 @@ func post(body map[string]any) (string, error) {
 		return "", err
 	}
 	resp, err := client.Post(base, "application/json", bytes.NewReader(b))
+	// The daemon restarting, after gen rewrote its files: it is back in a moment.
+	for until := time.Now().Add(20 * time.Second); err != nil && time.Now().Before(until); {
+		time.Sleep(100 * time.Millisecond)
+		resp, err = client.Post(base, "application/json", bytes.NewReader(b))
+	}
 	if err != nil {
 		return "", err
 	}
@@ -241,23 +191,4 @@ func post(body map[string]any) (string, error) {
 		return "", fmt.Errorf("workerd: %d %s", resp.StatusCode, out)
 	}
 	return string(out), nil
-}
-
-// reapOrphans stops the workerds of earlier processes that died without stopping them.
-func reapOrphans() {
-	dirs, _ := filepath.Glob(filepath.Join(os.TempDir(), "intl-workerd-*"))
-	for _, d := range dirs {
-		b, err := os.ReadFile(filepath.Join(d, "owner"))
-		if err != nil {
-			continue
-		}
-		var owner, worker int
-		if _, err := fmt.Sscan(string(b), &owner, &worker); err != nil || alive(owner) {
-			continue
-		}
-		if alive(worker) {
-			killGroup(worker)
-		}
-		os.RemoveAll(d)
-	}
 }

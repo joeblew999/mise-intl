@@ -19,8 +19,7 @@ func export(args []string) {
 	out := f.String("out", filepath.Join(c.XLIFFDir(), "out"), "directory for <locale>.xlf")
 	f.Parse(args)
 	p := read(c)
-	stop := startIntl()
-	defer stop()
+	startIntl()
 	must(os.MkdirAll(*out, 0o755))
 	for _, l := range pick(p, f.Args()) {
 		cardinal, ordinal, err := intltest.Categories(l.ID)

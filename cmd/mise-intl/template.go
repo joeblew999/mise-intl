@@ -60,7 +60,7 @@ func template(args []string) {
 	}
 	messages := messagesPackage(c)
 	ownPackage := exists(filepath.Join(c.Root, "package.json"))
-	for _, f := range []string{"app/main.go", "app/main_test.go", "mise.toml", "package.json", "pnpm-lock.yaml", "locales/en.toml", "locales/de.toml"} {
+	for _, f := range []string{"app/main.go", "app/main_test.go", "mise.toml", "pitchfork.toml", "package.json", "pnpm-lock.yaml", "locales/en.toml", "locales/de.toml"} {
 		b, _ := fs.ReadFile(templates.App, f)
 		to := filepath.Join(c.Root, filepath.FromSlash(f))
 		if dir, base := filepath.Split(f); dir == "locales/" {
@@ -76,8 +76,8 @@ func template(args []string) {
 			continue
 		case f == "package.json":
 			b = bytes.ReplaceAll(b, []byte(`"`+templates.AppName+`"`), []byte(`"`+npmName(name)+`"`))
-		case f == "mise.toml" && exists(to):
-			fmt.Printf("✓ mise.toml is the repo's own: left as it is. The template's app runs and tests with these:\n\n%s\n", b)
+		case (f == "mise.toml" || f == "pitchfork.toml") && exists(to):
+			fmt.Printf("✓ %s is the repo's own: left as it is. The template's app runs and tests with these:\n\n%s\n", f, b)
 			continue
 		case strings.HasSuffix(f, ".toml") && exists(to) && !starter(to):
 			fmt.Printf("✓ %s has messages of the repo's own: left as it is\n", to)

@@ -5,8 +5,8 @@
 .mise/config.local.toml
 # mise-intl gen output (mise run intl)
 intl_gen.go
-intl_messages_gen.go
 intl-messages.mjs
+intl-workerd/
 /xliff/
 # aube install (package.json: workerd)
 node_modules/

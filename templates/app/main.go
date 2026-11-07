@@ -17,12 +17,11 @@ import (
 )
 
 func main() {
-	// Intl outside a Cloudflare Worker: workerd, which mise.toml pins (run it through mise: mise run serve).
-	stop, err := workerd.Start(locales.Messages)
-	if err != nil {
+	// Intl outside a Cloudflare Worker: workerd, the repo's intl daemon (pitchfork.toml; run the app through mise: mise
+	// run serve).
+	if err := workerd.Start(); err != nil {
 		log.Fatal(err)
 	}
-	defer stop()
 	addr := cmp.Or(os.Getenv("ADDR"), "localhost:8080")
 	log.Printf("http://%s", addr)
 	log.Fatal(http.ListenAndServe(addr, handler()))

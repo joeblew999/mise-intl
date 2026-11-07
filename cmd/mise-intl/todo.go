@@ -49,8 +49,7 @@ type todoItem struct {
 }
 
 func todoList(c config.Config, p *catalog.Project, asJSON bool, ids []string) {
-	stop := startIntl()
-	defer stop()
+	startIntl()
 	var out []todoLocale
 	for _, l := range pick(p, ids) {
 		cardinal, ordinal, err := intltest.Categories(l.ID)

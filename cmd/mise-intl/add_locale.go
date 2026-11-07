@@ -19,12 +19,11 @@ func addLocale(args []string) {
 	if len(args) == 0 {
 		fail(errors.New("mise-intl add-locale <locale>…: the BCP 47 ids of the languages to add, fr or pt-BR"))
 	}
-	stop := startIntl()
+	startIntl()
 	for _, id := range args {
 		canon, ok := intl.NewLocale("en").Intl(intl.Call{API: "Intl", Method: "getCanonicalLocales", Args: []string{intl.JSON(id)}}, "", "")
 		var ids []string
 		if !ok || json.Unmarshal([]byte(canon), &ids) != nil || len(ids) != 1 {
-			stop()
 			fail(fmt.Errorf("intl: %q is not a BCP 47 locale id", id))
 		}
 		l := intl.NewLocale(ids[0])
@@ -33,7 +32,6 @@ func addLocale(args []string) {
 		c, err = config.Find(".")
 		must(err)
 	}
-	stop()
 	p := read(c)
 	must(p.Generate(os.Stderr))
 }

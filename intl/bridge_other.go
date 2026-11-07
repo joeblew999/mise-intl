@@ -8,7 +8,7 @@ var Runtime func(method string, args ...string) string
 
 func call(method string, args ...string) (string, bool) {
 	if Runtime == nil {
-		panic("intl: no Intl: outside a Worker, start workerd's first (workerd.Start(locales.Messages); in tests intltest.Main)")
+		panic("intl: no Intl: outside a Worker, start workerd's first (workerd.Start(); in tests intltest.Main)")
 	}
 	return Runtime(method, args...), true
 }
