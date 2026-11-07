@@ -57,6 +57,11 @@ jobs:
           mise --version
           mise install
 
+      # First, as on a person's machine with no pitchfork supervisor yet: the new repo's own commands start it, and its
+      # folder still goes when the walk ends.
+      - name: A new repo made as a person makes one - the walk, on it (mise run new-repo:e2e)
+        run: mise run new-repo:e2e
+
       - name: The tool's own tests (mise run tool:test, after template:setup, whose workerd they run Intl on), and the mise files and the Go lined up, the template's and this repo's (mise run template:check-mise, root:check-mise)
         run: |
           mise run template:setup
@@ -66,9 +71,6 @@ jobs:
 
       - name: The template, templates - the walk, its numbered tasks in their order, what its own workflow runs included (mise run template:e2e)
         run: mise run template:e2e
-
-      - name: A new repo made as a person makes one - the same walk, on it (mise run new-repo:e2e)
-        run: mise run new-repo:e2e
 
       - name: The template's app on a Cloudflare Worker, in local workerd, on the Worker's own Intl (mise run template:worker)
         run: mise run template:worker

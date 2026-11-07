@@ -148,6 +148,11 @@ func daemon() (string, error) {
 		}
 		return out, nil
 	}
+	// The supervisor, when it isn't running, from a folder that is no repo's: it keeps the folder it starts in as its
+	// own, and Windows can't remove a folder a process is in (a repo's, say, when its test ends).
+	sup := exec.Command("pitchfork", "supervisor", "start")
+	sup.Dir = os.TempDir()
+	sup.Run()
 	if _, err := pitchfork("start", "-q", "intl"); err != nil {
 		return "", err
 	}

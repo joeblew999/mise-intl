@@ -151,8 +151,9 @@ points it at this repo's own `mise.toml`, its mise side only: the root runs Go, 
 Shell steps only, no JavaScript actions. Each workflow checks out and installs mise, then only runs the root mise, as
 on any machine:
 
-- [ci.yml](.github/workflows/ci.yml), on every push and pull request, on Linux, macOS and Windows: `template:setup`,
-  `tool:test`, `template:check-mise`, `root:check-mise`, then `template:e2e`, `new-repo:e2e` and `template:worker`.
+- [ci.yml](.github/workflows/ci.yml), on every push and pull request, on Linux, macOS and Windows: `new-repo:e2e` first
+  (no pitchfork supervisor yet, as on a person's machine), then `template:setup`, `tool:test`, `template:check-mise`,
+  `root:check-mise`, `template:e2e` and `template:worker`.
 - [release.yml](.github/workflows/release.yml), on every change to the tool merged to main: `tool:release`. It takes
   the commit's `v*` tag or tags the next patch version, [goreleaser](.goreleaser.yaml) puts the `mise-intl` binary for
   macOS, Linux and Windows on the release, a new repo made pinning that release is walked (`new-repo:e2e --version`),
