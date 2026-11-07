@@ -60,7 +60,7 @@ func template(args []string) {
 	}
 	messages := messagesPackage(c)
 	ownPackage := exists(filepath.Join(c.Root, "package.json"))
-	for _, f := range []string{"app/main.go", "app/main_test.go", "mise.toml", "pitchfork.toml", "package.json", "pnpm-lock.yaml", "locales/en.toml", "locales/de.toml"} {
+	for _, f := range []string{"app/main.go", "app/server.go", "app/worker.go", "app/main_test.go", "mise.toml", "pitchfork.toml", "package.json", "pnpm-lock.yaml", "locales/en.toml", "locales/de.toml"} {
 		b, _ := fs.ReadFile(templates.App, f)
 		to := filepath.Join(c.Root, filepath.FromSlash(f))
 		if dir, base := filepath.Split(f); dir == "locales/" {

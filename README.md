@@ -92,6 +92,7 @@ tasks` lists each with what it does.
 | `template:setup` | The template's own setup: its workerd, which this repo's tests run Intl on | Before `tool:test`, once |
 | `template:gen` | The template's messages package, which this module's build needs | Before `tool:test` |
 | `template:e2e` | The walk on the template, where it is | After every change |
+| `template:worker` | `TestWorker`: the template's app on a Cloudflare Worker (Go for js/wasm, workers-go's glue, intl's Worker modules) in local workerd, `/` and `/de/` as the Go server answers | After a change to intl's Worker side |
 | `template:check-mise` | `TestTemplateMise` on the template's tasks file, the tool's Go, the walk and the template's skill, which names every task and flag | After a change to a task, a command or the skill |
 | `new-repo:e2e` | The walk on a new repo (`--version` pins a release) | After every change |
 | `tool:build` | This checkout's build, `bin/mise-intl` | Any task needs it |
@@ -142,6 +143,7 @@ points it at this repo's own `mise.toml`, its mise side only: the root runs Go, 
 | [tool_test.go](tool_test.go) | this repo's | `TestToolRelease`, the release: only `mise run tool:release` runs it |
 | [mise_test.go](mise_test.go) | this repo's | `TestRootMise` and `TestTemplateMise`: [mise-check's `misecheck`](https://github.com/joeblew999/mise-check) on a mise file of this repo and the Go it runs, both ways |
 | [workerd_test.go](workerd_test.go), [gsx_test.go](gsx_test.go) | this repo's | the workerd the template pins; intl's packages without gsx |
+| [worker_test.go](worker_test.go) | this repo's | `TestWorker`: the template's app on a Cloudflare Worker, in local workerd (only `mise run template:worker` runs it) |
 | [.github/workflows/](.github/workflows/) | this repo's | its own workflows; other repos get theirs from `templates/` |
 
 ### CI and releases
@@ -150,7 +152,7 @@ Shell steps only, no JavaScript actions. Each workflow checks out and installs m
 on any machine:
 
 - [ci.yml](.github/workflows/ci.yml), on every push and pull request, on Linux, macOS and Windows: `template:setup`,
-  `tool:test`, `template:check-mise`, `root:check-mise`, then `template:e2e` and `new-repo:e2e`.
+  `tool:test`, `template:check-mise`, `root:check-mise`, then `template:e2e`, `new-repo:e2e` and `template:worker`.
 - [release.yml](.github/workflows/release.yml), on every change to the tool merged to main: `tool:release`. It takes
   the commit's `v*` tag or tags the next patch version, [goreleaser](.goreleaser.yaml) puts the `mise-intl` binary for
   macOS, Linux and Windows on the release, a new repo made pinning that release is walked (`new-repo:e2e --version`),

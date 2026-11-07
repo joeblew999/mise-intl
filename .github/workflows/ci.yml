@@ -69,3 +69,6 @@ jobs:
 
       - name: A new repo made as a person makes one - the same walk, on it (mise run new-repo:e2e)
         run: mise run new-repo:e2e
+
+      - name: The template's app on a Cloudflare Worker, in local workerd, on the Worker's own Intl (mise run template:worker)
+        run: mise run template:worker

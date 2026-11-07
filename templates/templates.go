@@ -21,7 +21,7 @@ var tool embed.FS
 // Tool is the template's tool files: what mise-intl init writes into a repo, at their paths there.
 var Tool fs.FS = tool
 
-//go:embed app/main.go app/main_test.go mise.toml pitchfork.toml package.json pnpm-lock.yaml README.md
+//go:embed app/main.go app/server.go app/worker.go app/main_test.go mise.toml pitchfork.toml package.json pnpm-lock.yaml README.md
 //go:embed locales/en.toml locales/de.toml
 var app embed.FS
 

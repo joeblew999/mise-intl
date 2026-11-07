@@ -7,6 +7,7 @@
 #     mise run template:gen          its messages package, which the module's own build and tests need (gen there)
 #     mise run template:e2e          TestWalkTemplate on it: its numbered tasks in their order, through its own mise file, each checked
 #     mise run template:check-mise   misecheck on its tasks file against mise-intl's Go, and against the walk
+#     mise run template:worker       TestWorker: its app on a Cloudflare Worker, in local workerd, on the Worker's own Intl
 #   new-repo: a new repo, made as a person makes one (mise-intl init, then intl:template), by the walk and gone after it
 #     mise run new-repo:e2e          TestWalkNewRepo on it, at this checkout's build (local) or the release --version names
 #   tool: mise-intl itself, its command and its packages
@@ -60,6 +61,11 @@ run = 'go test . -run "^TestWalkTemplate$" -count=1 -v -timeout 15m'
 [tasks."template:check-mise"]
 description = "misecheck on the template's tasks file, both ways: against mise-intl's Go (each task's command is its file, each command file is a task's, each flag on both sides) and against the walk that runs them"
 run = 'go test . -run "^TestTemplateMise$" -count=1 -v'
+
+[tasks."template:worker"]
+description = "TestWorker: the template's app on a Cloudflare Worker, in local workerd, the runtime Cloudflare runs: Go built for js/wasm with workers-go's glue (workers-assets-gen), intl's Worker modules (mise-intl assets --worker), the Worker's own Intl, and / and /de/ answering what the Go server does. No Cloudflare account, no intl daemon"
+depends = ["template:gen"]
+run = 'go test . -run "^TestWorker$" -count=1 -v -timeout 10m'
 
 [tasks."new-repo:e2e"]
 description = "TestWalkNewRepo: a new repo, made as a person makes one (an empty folder with its own git, mise-intl init, then its own intl:template: the template's app, its go.mod named for the folder), in a folder of its own that goes when the walk ends; every numbered task, the ones that change the catalogs too. It pins this checkout's build (local, its go.mod using this checkout's packages), or a release with --version, as the release tries it. After tool:install"

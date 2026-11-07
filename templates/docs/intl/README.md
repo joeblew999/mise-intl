@@ -224,6 +224,10 @@ on each machine ([mise's getting started](https://mise.jdx.dev/getting-started.h
    mise-intl assets -worker build -browser dist/static
    ```
 
+   The template's app runs on a Worker as it is: `app/worker.go` serves the same handler with
+   [workers-go](https://github.com/syumai/workers-go) (`GOOS=js GOARCH=wasm go build`, its `workers-assets-gen -mode=go`
+   for the glue), and an entry module that sets `globalThis.goIntl` and exports workers-go's `worker.mjs`.
+
    Either way, the browser needs `intl-browser.mjs` and the `intl.mjs` it imports: `mise-intl assets -browser
    static` copies them. Copy them in your build and keep them out of git, like other generated files: they come
    with the intl version in `go.mod`.

@@ -1,31 +1,19 @@
 // Command app is the template's little app: one page of what the runtime's own Intl writes in the reader's language,
 // English or German, in plain Go (net/http, html/template, intl.Site and intl.Text; no gsx). go run ./app serves it at
-// http://localhost:8080 (ADDR to change it); /de/ is the page in German.
+// http://localhost:8080 (ADDR to change it); /de/ is the page in German. The same app runs on a Cloudflare Worker
+// (GOOS=js GOARCH=wasm): serve is server.go's on a server, worker.go's on a Worker.
 package main
 
 import (
-	"cmp"
 	"html/template"
-	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/joeblew999/mise-intl/intl"
-	"github.com/joeblew999/mise-intl/intl/workerd"
 	"github.com/joeblew999/mise-intl/templates/locales"
 )
 
-func main() {
-	// Intl outside a Cloudflare Worker: workerd, the repo's intl daemon (pitchfork.toml; run the app through mise: mise
-	// run serve).
-	if err := workerd.Start(); err != nil {
-		log.Fatal(err)
-	}
-	addr := cmp.Or(os.Getenv("ADDR"), "localhost:8080")
-	log.Printf("http://%s", addr)
-	log.Fatal(http.ListenAndServe(addr, handler()))
-}
+func main() { serve(handler()) }
 
 // handler is the app: intl.Site picks the request's language (its URL's /de/ prefix, the reader's choice, or their
 // browser's), and the page is written in it.

@@ -8,6 +8,7 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/gsxhq/gsx v0.5.0
 	github.com/joeblew999/mise-check v0.4.32
+	github.com/syumai/workers-go v0.36.0
 )
 
 require (
@@ -25,4 +26,7 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
 
-tool github.com/gsxhq/gsx/cmd/gsx
+tool (
+	github.com/gsxhq/gsx/cmd/gsx
+	github.com/syumai/workers-go/cmd/workers-assets-gen
+)
