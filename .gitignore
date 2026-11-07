@@ -9,3 +9,5 @@ bin/
 dist/
 # mise's override for one machine: mise-check's own checkout pins its build there (local)
 .mise/config.local.toml
+# Claude Code's worktrees of this checkout, for its agents
+.claude/worktrees/
