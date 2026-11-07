@@ -26,48 +26,16 @@ Claude Code cloud session.
 
 ## Use it in your repo
 
-Step by step, at the repository's root (GitHub and Claude Code read `.github/` and `.claude/` only there), in a repo
-that's new or has a Go app of its own:
+How to use intl, from setting up an app to every command, gsx or not, its screens and translating, is one page:
+[templates/docs/intl/README.md](templates/docs/intl/README.md), which `init` writes into your repo as
+`docs/intl/README.md`. To start, at the repository's root, with [mise](https://mise.jdx.dev/getting-started.html)
+installed:
 
-1. **Install mise**, once on each machine: [mise's getting started](https://mise.jdx.dev/getting-started.html)
-   (`curl https://mise.run | sh`, or `brew install mise`).
-2. **mise-intl's files, always:**
-
-   ```sh
-   mise exec github:joeblew999/mise-intl@latest -- mise-intl init
-   ```
-
-   It runs the newest release, or the one you name instead of `latest` (`@0.2.0`: they're all on
-   [its releases](https://github.com/joeblew999/mise-intl/releases)); mise takes a new release as `latest` once it's a
-   day old. It writes the repo's `.mise/` folder (its tasks, and mise-intl pinned at exactly that release, which mise
-   gets from GitHub, with the Go `go.mod` names), `intl.toml` with the source catalog (`--locales en,de` for more
-   languages), its GitHub workflow, its Claude Code hook and skill, its docs and its `.gitignore`. In a repo with a
-   `go.mod`, it requires intl's packages at the same release.
-3. **The template's app, only in a repo with none yet:**
-
-   ```sh
-   mise run intl:template
-   ```
-
-   It writes the template's little app: one page of intl's formats in plain Go (`app/`), in English and German, its
-   `go.mod` named for the repo's folder, the `mise.toml` and `package.json` that install workerd (node, aube, `mise
-   run setup`), and a README, and installs it (`mise run setup`, then `go mod tidy`). It never writes over a file: a repo with an app of its own gets none of
-   it, and adds workerd its own way (`aube add -D workerd@1.20261104.1`, with node and aube in its `mise.toml`, as the
-   template's).
-4. **Then:**
-
-   ```sh
-   mise run intl
-   ```
-
-   It shows what's done, and what to run next.
-
-Commit what steps 2 and 3 wrote. `mise run serve` serves the template's app at http://localhost:8080, `/de/` in
-German.
-
-`init` writes everything your repo gets, its own docs among them: `docs/intl/README.md`, with every command, gsx or
-not, the screens, translating. That page is [templates/docs/intl/README.md](templates/docs/intl/README.md) here, in the
-template, just as a repo has it.
+```sh
+mise exec github:joeblew999/mise-intl@latest -- mise-intl init
+mise run intl:template   # only in a repo with no app yet: the template's little app
+mise run intl            # what's done, and what to run next
+```
 
 ## What the app imports
 
@@ -122,13 +90,19 @@ tasks` lists each with what it does.
 | `template:setup` | The template's own setup: its workerd, which this repo's tests run Intl on | Before `tool:test`, once |
 | `template:gen` | The template's messages package, which this module's build needs | Before `tool:test` |
 | `template:e2e` | The walk on the template, where it is | After every change |
-| `template:check-mise` | `TestTemplateMise` on the template's tasks file and the tool's Go | After a change to a task or a command |
+| `template:check-mise` | `TestTemplateMise` on the template's tasks file, the tool's Go, the walk and the template's skill, which names every task and flag | After a change to a task, a command or the skill |
 | `new-repo:e2e` | The walk on a new repo (`--version` pins a release) | After every change |
 | `tool:build` | This checkout's build, `bin/mise-intl` | Any task needs it |
 | `tool:install` | That build as the mise version `local`, for any repo on this machine (`mise use github:joeblew999/mise-intl@local` there) and the template's (`templates/.mise/config.local.toml`, never committed) | To try a change in another repo, never by waiting on a release |
 | `tool:test` | `go vet`, the Go tests, the release config | After every change |
 | `tool:release` | A release from the commit checked out, as `release.yml` runs it; `--dry-run` tags and publishes nothing | Never by hand: a merge to main runs it |
 | `root:check-mise` | `TestRootMise` on this repo's own `mise.toml`, its mise side: one line each, the Go it runs there, `usage` passed by name, no POSIX shell syntax, so every task runs on Windows too | After a change to this repo's tasks |
+
+This repo's pins, and the rules on its mise files, are [mise-check](https://github.com/joeblew999/mise-check)'s, through
+its own tasks, which `mise-check init` wrote into `.mise/` (`.mise/config.toml` pins it, at the release `go.mod`
+requires its packages at): `mise run mise-check` says what's done and what to run next, and every task is
+[docs/mise-check/README.md](docs/mise-check/README.md). Pins move only by `mise run mise-check:update`, then
+`tool:test` and the walks prove it.
 
 ### Tests
 
@@ -186,7 +160,7 @@ on any machine:
 
 intl came from [go-htmx4](https://github.com/joeblew999/go-htmx4), which uses it.
 
-This README is the one place for all of it, for people and agents alike: CLAUDE.md only loads it (`@README.md`).
+This README is the one place for working on mise-intl, for people and agents alike: CLAUDE.md only loads it (`@README.md`). How to use intl is the docs page's, [templates/docs/intl/README.md](templates/docs/intl/README.md), never this README's: here, only how to start, and the link there.
 
 ## License
 

@@ -93,6 +93,51 @@ mise-intl gen && mise-intl check
 language needs, a stale or missing message. Fix them all and run it again until it passes. Then report, per locale,
 how many messages you translated and confirmed.
 
+## Every task
+
+Each runs the mise-intl command of its name (`mise run intl:06-gen` runs `mise-intl gen`). Start with `mise run intl`:
+it says what's done and what to run next.
+
+| Task | Run it | What it does |
+|---|---|---|
+| `mise run intl` | first, and whenever you're unsure | what's done for the app's languages, and what to run next |
+| `mise run intl:03-init` | after upgrading intl | intl's files written again: its tasks, the workflow, this skill, the docs, the hook |
+| `mise run intl:04-check` | after any change, before pushing | every problem: syntax, arguments, plural forms, missing and stale translations, unused keys |
+| `mise run intl:05-show` | to see where the app is | the same as `mise run intl` |
+| `mise run intl:06-gen` | after any change to a catalog | the catalogs compiled into the app's messages package, and `intl.sum` |
+| `mise run intl:07-status` | to see how far each language is | per language: translated, inherited, stale, missing |
+| `mise run intl:08-add-locale` | to add a language | its id as Intl writes it, into `intl.toml`, and its catalog |
+| `mise run intl:09-todo` | before translating | what's left to translate, with what a translator needs |
+| `mise run intl:10-translate` | when the person asks for every language translated | a Claude Code worker per language, each with this skill |
+| `mise run intl:11-export` | for human translators | XLIFF 2.0 per language into `xliff/out` |
+| `mise run intl:12-import` | when their files are back | their XLIFF, from `xliff/in`, read into the catalogs |
+| `mise run intl:13-confirm` | for a stale translation that is still right | kept as it is: a language's, or one message's |
+| `mise run intl:14-prune` | when check names a key the source no longer has | the key removed from every catalog |
+| `mise run intl:verify` | before every push | what `.github/workflows/intl.yml` runs on GitHub: the repo's `setup` and `test`, then check |
+| `mise run intl:template` | only in a repo with no app yet | the template's little app; it never writes over a file |
+| `mise run intl:add` | for a language list, the language offer, or preferences | intl's screens copied into a gsx app, their text translated |
+| `mise run intl:assets` | for a Worker build or a page's own modules | the JavaScript they import: intl's, and the app's catalogs |
+| `mise run intl:locales` | to list the shipped languages | them, comma-separated |
+| `mise run intl:catalogs` | to name the catalogs' Go package | its name |
+| `mise run intl:markup` | for gsx's checks | the app's own markup files |
+| `mise run intl:show-version` | to say which mise-intl this is | its version |
+| `mise run intl:show-help` | to list every command | every command |
+
+Flags and arguments:
+
+- `--json`: one JSON document on stdout instead of text, on `mise run intl`, `05-show` and `09-todo`. Read that,
+  never the text.
+- `--locales <ids>`, `--catalogs <dir>`, `--gsxui <dir>`: on `03-init`, the languages (the source first: `en,de`),
+  the catalogs' folder, and in a gsx app where `gsxui add` puts its components. Once set up, `intl.toml` keeps them.
+- `--missing <how>`: on `04-check`, `fail` or `warn` on missing and stale translations (default: `INTL_MISSING`,
+  else warn on a GitHub pull request, else fail).
+- `--all`: on `11-export`, every message, not only what's left. `--out <dir>`: the folder, `xliff/out`.
+- `--diff`: on `add`, how the copies in the app differ, writing nothing. `--overwrite`: replace copies the app
+  changed; only when the person says so.
+- `--worker <dir>`, `--browser <dir>`: on `assets`, the folder for a Worker build's modules, and the one a page loads
+  its modules from.
+- Languages after `04-check`, `09-todo`, `10-translate`, `11-export` and `13-confirm` limit them to those: `de fr`.
+
 ## Other tasks
 
 - **Add a language:** `mise-intl add-locale fr-CA` (it checks the id with Intl, adds it to `intl.toml`'s
