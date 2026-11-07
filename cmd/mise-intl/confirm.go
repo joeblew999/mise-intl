@@ -8,7 +8,7 @@ import (
 	"github.com/joeblew999/mise-intl/internal/catalog"
 )
 
-// confirm is mise-intl confirm [<locale>[:<key>]…] (13): stale translations that are still right, kept (every one
+// confirm is mise-intl confirm [<locale>[:<key>]…]: stale translations that are still right, kept (every one
 // of them by default).
 func confirm(args []string) {
 	c := app()

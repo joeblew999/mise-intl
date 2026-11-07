@@ -56,7 +56,8 @@ workerd@1.20261104.1`, `pitchfork` in its `mise.toml`, and the template's `pitch
 | Intl, off Cloudflare | workerd, from npm: the repo's `package.json` pins it, aube installs it (`INTL_WORKERD` names one of your own); pitchfork runs it, `pitchfork.toml`'s `intl` daemon | the lockfile |
 | Go itself | `go.mod`'s `toolchain` line (or its `go` line), which `.mise/config.toml` has mise install | mise |
 
-Each command is a task too, numbered in the order a repo meets them: `mise run intl:06-gen` runs `mise-intl gen`.
+Each command is a task too, named for it: `mise run intl:gen` runs `mise-intl gen`. The table below has them in the order
+a repo meets them, and `mise run intl` says which is next.
 
 ## Using it day to day
 
@@ -65,27 +66,27 @@ arguments only narrow it, straight after the task name. `mise run <task> --help`
 
 ```sh
 mise run intl                       # what's done, and what to run next (mise-intl)
-mise run intl:04-check              # every problem, for CI: catalogs, plurals, unused messages, intl's files
-mise run intl:06-gen                # compile the catalogs after editing them (gsx generate needs this first)
-mise run intl:07-status             # how far along each language is
-mise run intl:08-add-locale fr      # a new language: intl.toml and its catalog, the id checked by Intl
-mise run intl:09-todo               # what is left to translate, for a person (--json for an agent)
-mise run intl:10-translate          # Claude Code translates everything missing or stale, in every language
-mise run intl:11-export             # xliff/out/<locale>.xlf for human translators: what is left (--all: everything)
-mise run intl:12-import             # their work back, from xliff/in
-mise run intl:13-confirm            # the source changed but not its meaning (a typo fixed): keep the stale translations
-mise run intl:14-prune              # remove keys the source no longer has from every catalog
+mise run intl:check              # every problem, for CI: catalogs, plurals, unused messages, intl's files
+mise run intl:gen                # compile the catalogs after editing them (gsx generate needs this first)
+mise run intl:status             # how far along each language is
+mise run intl:add-locale fr      # a new language: intl.toml and its catalog, the id checked by Intl
+mise run intl:todo               # what is left to translate, for a person (--json for an agent)
+mise run intl:translate          # Claude Code translates everything missing or stale, in every language
+mise run intl:export             # xliff/out/<locale>.xlf for human translators: what is left (--all: everything)
+mise run intl:import             # their work back, from xliff/in
+mise run intl:confirm            # the source changed but not its meaning (a typo fixed): keep the stale translations
+mise run intl:prune              # remove keys the source no longer has from every catalog
 mise run intl:add preferences       # in a gsx app: one of intl's screens (language-list, language-offer, preferences)
-mise run intl:03-init               # after upgrading intl: intl's files written again
+mise run intl:init               # after upgrading intl: intl's files written again
 
-mise run intl:10-translate de ja         # only German and Japanese
-mise run intl:13-confirm de:cart.items   # only one translation
+mise run intl:translate de ja         # only German and Japanese
+mise run intl:confirm de:cart.items   # only one translation
 ```
 
-Each runs the command of its name: `mise run intl:06-gen` runs `mise-intl gen`. The usual loop: write
-or change messages in the source catalog, `mise run intl:10-translate`, `mise run intl:04-check`. A new language:
-`mise run intl:08-add-locale fr`, then `mise run intl:10-translate`. (Adding its id to `intl.toml`'s `locales` by
-hand works too: the next `mise run intl:06-gen` writes its catalog.)
+Each runs the command of its name: `mise run intl:gen` runs `mise-intl gen`. The usual loop: write
+or change messages in the source catalog, `mise run intl:translate`, `mise run intl:check`. A new language:
+`mise run intl:add-locale fr`, then `mise run intl:translate`. (Adding its id to `intl.toml`'s `locales` by
+hand works too: the next `mise run intl:gen` writes its catalog.)
 
 ## With gsx, or without
 
@@ -238,8 +239,8 @@ on each machine ([mise's getting started](https://mise.jdx.dev/getting-started.h
    func TestMain(m *testing.M) { os.Exit(intltest.Main(m)) }
    ```
 
-6. Day to day: `mise run intl:06-gen` before `gsx generate` (make your generate task depend on it), and
-   `mise run intl:04-check` in CI (the workflow `init` wrote runs `mise run intl:verify`). On a pull request (GitHub Actions' `pull_request` runs), `mise-intl check` only
+6. Day to day: `mise run intl:gen` before `gsx generate` (make your generate task depend on it), and
+   `mise run intl:check` in CI (the workflow `init` wrote runs `mise run intl:verify`). On a pull request (GitHub Actions' `pull_request` runs), `mise-intl check` only
    reports missing and stale translations, without failing, so a contributor can leave them and you translate them
    after merging; pushes and releases stay strict. `INTL_MISSING=fail` or `warn` (or `--missing`) says otherwise.
 
@@ -338,23 +339,23 @@ say:
 
 | When | Run |
 |---|---|
-| You added or changed messages in the source catalog | `mise run intl:06-gen`, then `mise run intl:10-translate` (Claude Code) or translate what `mise run intl:09-todo` lists |
-| A translation's source changed | it is **stale**: `intl:09-todo` shows the old translation beside the new source. Update it, or keep it: `mise run intl:13-confirm de:order.items` |
-| You add a language | `mise run intl:08-add-locale fr`, then `mise run intl:10-translate`. A regional one can take what it doesn't translate from another: `[inherit] fr-CA = "fr"` |
-| You delete or rename a source message | `intl:04-check` names the keys left in the translations; `mise run intl:14-prune` removes them |
-| `gsxui add pagination` | `mise run intl:06-gen` names each new text with the line to add under `[gsxui]`; add them, then translate |
-| A person translates | `mise run intl:11-export` writes XLIFF 2.0 per locale into `xliff/out` for their tool; put what comes back in `xliff/in`, and `mise run intl:12-import` reads it, checking each target (one translated from older English is refused) |
-| CI | `mise run intl:04-check` |
+| You added or changed messages in the source catalog | `mise run intl:gen`, then `mise run intl:translate` (Claude Code) or translate what `mise run intl:todo` lists |
+| A translation's source changed | it is **stale**: `intl:todo` shows the old translation beside the new source. Update it, or keep it: `mise run intl:confirm de:order.items` |
+| You add a language | `mise run intl:add-locale fr`, then `mise run intl:translate`. A regional one can take what it doesn't translate from another: `[inherit] fr-CA = "fr"` |
+| You delete or rename a source message | `intl:check` names the keys left in the translations; `mise run intl:prune` removes them |
+| `gsxui add pagination` | `mise run intl:gen` names each new text with the line to add under `[gsxui]`; add them, then translate |
+| A person translates | `mise run intl:export` writes XLIFF 2.0 per locale into `xliff/out` for their tool; put what comes back in `xliff/in`, and `mise run intl:import` reads it, checking each target (one translated from older English is refused) |
+| CI | `mise run intl:check` |
 | Leftover English in the UI | `intl.Pseudo = true` renders the `en-XA` catalog: accented, bracketed (`⟦Ĥéļļó⟧`), 40% longer |
 
-`intl:10-translate` runs Claude Code headless with the `intl` skill, one worker per language at once
-(`intl.toml`'s `[translate] workers`, default 6, on `[translate] model`). A worker reads `intl:09-todo --json` for its
+`intl:translate` runs Claude Code headless with the `intl` skill, one worker per language at once
+(`intl.toml`'s `[translate] workers`, default 6, on `[translate] model`). A worker reads `intl:todo --json` for its
 language (each message's source, context and arguments, the plural categories from Intl, the notes from
 `intl.toml`). It may edit only that language's catalog, and it checks its work with `mise-intl check <locale>`
-until that passes. Then `gen` and the full `intl:04-check` run once. The skill is in `.claude/skills/intl` and works the same in an
+until that passes. Then `gen` and the full `intl:check` run once. The skill is in `.claude/skills/intl` and works the same in an
 interactive session ("translate the new messages").
 
-`intl:04-check` fails on any of these:
+`intl:check` fails on any of these:
 - an ICU syntax error, or an argument or argument kind the source doesn't have;
 - a plural or selectordinal without a case for a category the language uses (Russian: one, few, many, other);
 - a missing or stale translation, or a key the source no longer has;
@@ -369,9 +370,9 @@ interactive session ("translate the new messages").
   `selectordinal`, `select`, `{n, number}`). A key a translation lacks comes from the locale `[inherit]` names
   (`en-IN = "en"`). Otherwise it is missing, and the source text shows.
 - `intl.sum` records, for every translation, the source text it was translated from (as hashes). That's how a
-  changed source shows up as stale. `intl:06-gen` writes it; editing a translation updates it.
+  changed source shows up as stale. `intl:gen` writes it; editing a translation updates it.
 - A locale is complete when nothing is missing: `intl.Complete(id)`, so `intl.Site` serves an incomplete one
-  `noindex`. Stale translations don't make it incomplete (they still say the right thing in the language); `intl:04-check`
+  `noindex`. Stale translations don't make it incomplete (they still say the right thing in the language); `intl:check`
   fails on them until they are updated or confirmed.
 
 ## The tasks
@@ -381,18 +382,18 @@ Numbered in the order a repo meets them; each runs the command of its name.
 | Task (with mise) | Command (without) | What it does |
 |---|---|---|
 | `mise run intl` | `mise-intl` | What's done, and what to run next |
-| `intl:03-init` | `mise-intl init` | intl's files, as this version writes them |
-| `intl:04-check` | `mise-intl check` | Every problem, for CI (`--missing warn`; or only the languages named) |
-| `intl:05-show` | `mise-intl show` | What's done, and what to run next (`--json`) |
-| `intl:06-gen` | `mise-intl gen` | The catalogs compiled into the app's messages package |
-| `intl:07-status` | `mise-intl status` | Per language: translated, inherited, stale, missing |
-| `intl:08-add-locale` | `mise-intl add-locale` | A language added |
-| `intl:09-todo` | `mise-intl todo` | What's left to translate (`--json`) |
-| `intl:10-translate` | `mise-intl translate` | Claude Code translates it |
-| `intl:11-export` | `mise-intl export` | XLIFF 2.0 for translators (`--all`, `--out`) |
-| `intl:12-import` | `mise-intl import` | Their XLIFF read back |
-| `intl:13-confirm` | `mise-intl confirm` | Stale translations that are still right, kept |
-| `intl:14-prune` | `mise-intl prune` | Keys the source no longer has, removed |
+| `intl:init` | `mise-intl init` | intl's files, as this version writes them |
+| `intl:check` | `mise-intl check` | Every problem, for CI (`--missing warn`; or only the languages named) |
+| `intl:show` | `mise-intl show` | What's done, and what to run next (`--json`) |
+| `intl:gen` | `mise-intl gen` | The catalogs compiled into the app's messages package |
+| `intl:status` | `mise-intl status` | Per language: translated, inherited, stale, missing |
+| `intl:add-locale` | `mise-intl add-locale` | A language added |
+| `intl:todo` | `mise-intl todo` | What's left to translate (`--json`) |
+| `intl:translate` | `mise-intl translate` | Claude Code translates it |
+| `intl:export` | `mise-intl export` | XLIFF 2.0 for translators (`--all`, `--out`) |
+| `intl:import` | `mise-intl import` | Their XLIFF read back |
+| `intl:confirm` | `mise-intl confirm` | Stale translations that are still right, kept |
+| `intl:prune` | `mise-intl prune` | Keys the source no longer has, removed |
 | `intl:verify` | `mise-intl verify` | What GitHub runs: the repo's setup and test tasks, then check |
 | `intl:template` | `mise-intl template` | The template's little app, in a repo with no app yet |
 | `intl:add` | `mise-intl add` | In a gsx app: intl's screens (`--diff`, `--overwrite`) |

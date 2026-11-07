@@ -69,7 +69,7 @@ jobs:
           mise run template:check-mise
           mise run root:check-mise
 
-      - name: The template, templates - the walk, its numbered tasks in their order, what its own workflow runs included (mise run template:e2e)
+      - name: The template, templates - the walk, its tasks in a person's order, what its own workflow runs included (mise run template:e2e)
         run: mise run template:e2e
 
       - name: The template's app on a Cloudflare Worker, in local workerd, on the Worker's own Intl (mise run template:worker)

@@ -1,5 +1,5 @@
 // Package templates is mise-intl's template, embedded for mise-intl: a whole repo that runs where it is, in two
-// parts: the tool's files, which mise-intl init writes into any repo (the numbered tasks and
+// parts: the tool's files, which mise-intl init writes into any repo (the tasks and
 // the mise config they run with (Go, from go.mod), the GitHub workflow, the Claude Code hook and skill, the docs, the .gitignore), and the
 // template's little app, which mise-intl template writes into a repo with no app yet (a page of intl's formats in
 // plain Go in app/, its catalogs in English and German, its tasks, the package.json that pins its workerd, its README). This file is the template's only Go at

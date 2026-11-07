@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -33,11 +34,11 @@ const self = "github:joeblew999/mise-intl"
 func tool() miseconfig.Tool {
 	tmpl, err := fs.ReadFile(templates.Tool, ".mise/config.toml")
 	must(err)
-	return miseconfig.Tool{Name: self, Release: strings.TrimPrefix(version, "v"), Template: tmpl, Init: "mise run intl:03-init"}
+	return miseconfig.Tool{Name: self, Release: strings.TrimPrefix(version, "v"), Template: tmpl, Init: "mise run intl:init"}
 }
 
-// initRepo is mise-intl init (03): the repo set up for intl, as mise-cloudflare's init sets a repo up. First the
-// template's tool files (templates.Tool: the numbered tasks, and .mise/config.toml pinning this build, the release
+// initRepo is mise-intl init: the repo set up for intl, as mise-cloudflare's init sets a repo up. First the
+// template's tool files (templates.Tool: the tasks, and .mise/config.toml pinning this build, the release
 // that ran it (mise exec github:joeblew999/mise-intl@latest -- mise-intl init, the README's way) or local; the GitHub
 // workflow, the Claude Code hook and skill, the docs), each at its path; in a Go module, intl's packages required in
 // its go.mod at this release (pinLibrary); then the repo's own (setup.Init): intl.toml with its languages (--locales
@@ -60,6 +61,9 @@ func initRepo(args []string) {
 		o.Gsxui = setup.DetectGsxui(root) // gsxui set up since: intl.toml gets it
 	}
 	writeTool(root)
+	for _, s := range oldNames(root) {
+		fmt.Println("·", s)
+	}
 	trustConfig(root, ".mise/config.toml")
 	pinLibrary(root)
 	must(setup.Init(root, o, os.Stdout))
@@ -137,9 +141,10 @@ func writeTool(root string) {
 }
 
 // stale names the files init wrote that this version would write differently, mise-intl's parts of the repo's own
-// .mise/config.toml it lacks, and a .claude/settings.json of the repo's own that doesn't run the hook.
+// .mise/config.toml it lacks, a .claude/settings.json of the repo's own that doesn't run the hook, and the repo's own
+// files that name a task by its old number (oldNames).
 func stale(root string) []string {
-	var out []string
+	out := oldNames(root)
 	fs.WalkDir(templates.Tool, ".", func(p string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() || theirs[p] {
 			return err
@@ -161,6 +166,29 @@ func stale(root string) []string {
 	}
 	if b, err := os.ReadFile(filepath.Join(root, ".claude", "settings.json")); err == nil && !bytes.Contains(b, []byte(templates.HookFile)) {
 		out = append(out, ".claude/settings.json doesn't run .claude/hooks/"+templates.HookFile+": add its SessionStart entry (docs/intl/README.md)")
+	}
+	return out
+}
+
+// oldName is an intl task by the number it had before the tasks were named for their commands: intl:06-gen.
+var oldName = regexp.MustCompile(`\bintl:[0-9]{2}-([a-z-]+)`)
+
+// oldNames are the repo's own mise files and workflows that name a task by its old number (intl:06-gen is intl:gen
+// now), each with its new name. The files init writes are this version's already.
+func oldNames(root string) []string {
+	var out []string
+	for _, glob := range []string{"mise.toml", "mise.*.toml", ".mise/*.toml", ".mise/tasks/*.toml", ".github/workflows/*.yml"} {
+		files, _ := filepath.Glob(filepath.Join(root, filepath.FromSlash(glob)))
+		for _, f := range files {
+			rel, _ := filepath.Rel(root, f)
+			if p := filepath.ToSlash(rel); p == ".mise/tasks/mise-intl.toml" || p == ".github/workflows/intl.yml" {
+				continue
+			}
+			b, _ := os.ReadFile(f)
+			for _, m := range oldName.FindAllSubmatch(b, -1) {
+				out = append(out, fmt.Sprintf("%s names %s, which is intl:%s now: rename it there", filepath.ToSlash(rel), m[0], m[1]))
+			}
+		}
 	}
 	return out
 }

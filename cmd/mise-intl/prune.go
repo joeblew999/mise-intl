@@ -8,7 +8,7 @@ import (
 	"github.com/joeblew999/mise-intl/internal/catalog"
 )
 
-// prune is mise-intl prune (14): the keys the source no longer has, removed from the catalogs.
+// prune is mise-intl prune: the keys the source no longer has, removed from the catalogs.
 func prune(args []string) {
 	c := app()
 	p := read(c)

@@ -14,7 +14,7 @@ import (
 	"github.com/joeblew999/mise-intl/intl/intltest"
 )
 
-// check is mise-intl check (04): every problem, for CI: syntax, arguments, plural categories, completeness, unused
+// check is mise-intl check: every problem, for CI: syntax, arguments, plural categories, completeness, unused
 // messages, gsxui text, intl.sum, and intl's files as this version writes them (exit 1 if any). With locales, only
 // theirs, writing nothing; --missing warn only reports missing and stale translations (a contributor's pull request).
 // Without --missing, INTL_MISSING says, else GitHub Actions' pull_request runs only warn: a contributor's pull request

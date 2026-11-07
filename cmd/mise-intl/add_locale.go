@@ -11,7 +11,7 @@ import (
 	"github.com/joeblew999/mise-intl/intl/config"
 )
 
-// addLocale is mise-intl add-locale <locale>… (08): a language, its id as Intl writes it, added to intl.toml with
+// addLocale is mise-intl add-locale <locale>…: a language, its id as Intl writes it, added to intl.toml with
 // its catalog.
 func addLocale(args []string) {
 	c := app()

@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-// status is mise-intl status (07): per locale, translated, inherited, stale, missing; exit 1 if one is incomplete.
+// status is mise-intl status: per locale, translated, inherited, stale, missing; exit 1 if one is incomplete.
 func status(args []string) {
 	c := app()
 	p := read(c)

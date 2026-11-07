@@ -24,7 +24,7 @@ type report struct {
 	Command   string   `json:"command"`   // the same without mise
 }
 
-// show is mise-intl show (05), and mise-intl with no command (mise run intl): the steps, which are done for
+// show is mise-intl show, and mise-intl with no command (mise run intl): the steps, which are done for
 // this repo, and the next one. It asks Intl nothing, so it's quick.
 func show(args []string) {
 	f := flag.NewFlagSet("show", flag.ExitOnError)
@@ -51,17 +51,17 @@ func show(args []string) {
 		}
 		switch {
 		case anyHas(r.Problems, "mise-intl init"):
-			r.Next, r.Command = "mise run intl:03-init", "mise-intl init"
+			r.Next, r.Command = "mise run intl:init", "mise-intl init"
 		case len(r.Problems) > 0:
-			r.Next, r.Command = "mise run intl:04-check", "mise-intl check"
+			r.Next, r.Command = "mise run intl:check", "mise-intl check"
 		case !r.Generated:
-			r.Next, r.Command = "mise run intl:06-gen", "mise-intl gen"
+			r.Next, r.Command = "mise run intl:gen", "mise-intl gen"
 		case !r.App:
 			r.Next, r.Command = "mise run intl:template", "mise-intl template"
 		case r.Left > 0:
-			r.Next, r.Command = "mise run intl:09-todo", "mise-intl todo"
+			r.Next, r.Command = "mise run intl:todo", "mise-intl todo"
 		default: // every language complete: another, or a message changed then gen
-			r.Next, r.Command = "mise run intl:08-add-locale", "mise-intl add-locale"
+			r.Next, r.Command = "mise run intl:add-locale", "mise-intl add-locale"
 		}
 	}
 	if *jsonOut {

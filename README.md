@@ -19,7 +19,7 @@ up doing them a little differently, or not at all:
 **What mise-intl does.** It does all of that through [mise](https://mise.jdx.dev), for any Go app, with
 [gsx](https://github.com/gsxhq/gsx) or without: messages in catalogs, compiled into the app's own Go package, and every
 value formatted by the runtime's own `Intl` (V8's: a Cloudflare Worker's, or workerd's off Cloudflare). One command adds
-it to a repo, and from then on every step is a mise task, numbered in the order you need them. Each one says what it
+it to a repo, and from then on every step is a mise task, named for what it does. Each one says what it
 did and what to run next, and `mise run intl` shows where the repo is at any time. Every version is pinned: mise-intl
 in `.mise/config.toml`, workerd in `package.json`. CI checks it on macOS, Linux and Windows, and it sets itself up in a
 Claude Code cloud session.
@@ -84,7 +84,7 @@ run the furthest you need, here, never waiting on GitHub. In this checkout the t
 
 ### Tasks
 
-Every task is named noun:verb, what it acts on and then what it does, as a repo's own are (`intl:06-gen`). `mise
+Every task is named noun:verb, what it acts on and then what it does, as a repo's own are (`intl:gen`). `mise
 tasks` lists each with what it does.
 
 | Task | What | When |
@@ -109,10 +109,10 @@ requires its packages at): `mise run mise-check` says what's done and what to ru
 
 ### Tests
 
-**The walk.** A repo's steps are its own numbered tasks, `intl:03-init` to `intl:14-prune`
-([templates/.mise/tasks/mise-intl.toml](templates/.mise/tasks/mise-intl.toml)), after steps 00 to 02 (the repo's git,
-`mise install`, its own `setup`). One name all the way through: `intl:06-gen` runs `mise-intl gen`, which is
-`main.go`'s `case "gen"` calling `gen` in `gen.go`. The walk tests (`TestWalkTemplate`, `TestWalkNewRepo`) walk them in their order, through the repo's own mise
+**The walk.** A repo's steps are its own tasks, `intl:init` to `intl:prune`
+([templates/.mise/tasks/mise-intl.toml](templates/.mise/tasks/mise-intl.toml)), each named for its command, in the
+order a person takes them, after the repo's git, `mise install` and its own `setup`. One name all the way through: `intl:gen` runs `mise-intl gen`, which is
+`main.go`'s `case "gen"` calling `gen` in `gen.go`. The walk tests (`TestWalkTemplate`, `TestWalkNewRepo`) walk them in that order, through the repo's own mise
 file, as a person takes them, each step with its check: `init` writes exactly the template; `check` and the
 workflow's `verify` pass, and a pull request only warns where a push fails; the app answers in English and in German,
 each value as that language's Intl writes it; a language added, exported to a translator and imported back; a changed

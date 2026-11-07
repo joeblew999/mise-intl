@@ -14,7 +14,7 @@ import (
 	"github.com/joeblew999/mise-intl/intl/intltest"
 )
 
-// todo is mise-intl todo (09): what is left to translate, with what a translator needs, for people and agents
+// todo is mise-intl todo: what is left to translate, with what a translator needs, for people and agents
 // (--json).
 func todo(args []string) {
 	c := app()

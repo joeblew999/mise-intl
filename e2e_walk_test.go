@@ -1,11 +1,11 @@
-// Package e2e is this repo's end-to-end test: a walk of a repo's numbered tasks, through the repo's own mise file, on
+// Package e2e is this repo's end-to-end test: a walk of a repo's tasks, in a person's order, through the repo's own mise file, on
 // mise-check's walk (github.com/joeblew999/mise-check/walk), which runs the steps in their order and does everything
 // that isn't intl's. It sits at the top of this repo, beside the root mise.toml whose tasks run it, in a file for each
 // thing it does:
 //
 //   - e2e_walk_test.go, this file: the walk tests the root's tasks run by name (TestWalkTemplate, TestWalkNewRepo),
 //     and TestSteps.
-//   - e2e_steps_test.go: the steps, the repo's numbered tasks in their order, each with its check.
+//   - e2e_steps_test.go: the steps, the repo's tasks in a person's order, each with its check.
 //   - e2e_mise_test.go: the repo, and what's intl's in making one: a new repo (mise-intl init, then intl:template), and
 //     the calls the steps make.
 //
@@ -23,7 +23,7 @@ import (
 	"github.com/joeblew999/mise-check/walk"
 )
 
-// intlWalk is the walk: the template's numbered tasks (templates/.mise/tasks/mise-intl.toml), in their order, each
+// intlWalk is the walk: the template's tasks (templates/.mise/tasks/mise-intl.toml), in a person's order, each
 // checked. Which repo is the test's name: the template where it is, or a new repo made the README's way (at the
 // release -version names or this checkout's build).
 var intlWalk = walk.Walk[*walker]{Steps: steps, New: newRepo, Prepare: prepare, Of: walkOf}

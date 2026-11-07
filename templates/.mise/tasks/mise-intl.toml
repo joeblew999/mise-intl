@@ -1,7 +1,6 @@
 # This repo's languages, with intl (github.com/joeblew999/mise-intl). Start with: mise run intl (what's done, and what to
-# run next). One task per command, numbered in the order a repo meets them: mise run intl:<nn>-<command> runs
-# mise-intl <command>. Steps 00 to 02 come before these tasks: the repo's git, mise install, its own setup. Each passes
-# its usage values with mise's own templates ({{usage.<name>}}), never shell syntax, so it runs the same under sh, cmd
+# run next). One task per command, named for it: mise run intl:<command> runs mise-intl <command>, and mise run intl
+# says which comes next (docs/intl/README.md has them in the order a repo meets them). Each passes its usage values with mise's own templates ({{usage.<name>}}), never shell syntax, so it runs the same under sh, cmd
 # and PowerShell.
 # Written by mise-intl (github.com/joeblew999/mise-intl): don't edit it. .mise/config.toml pins its version.
 
@@ -10,61 +9,61 @@ description = "Start here: what's done, and what to run next (mise run intl:show
 usage = 'flag "--json" help="one JSON document on stdout, instead of text"'
 run = 'mise-intl{% if usage.json %} --json{% endif %}'
 
-["intl:03-init"]
-description = "03. intl's files written into the repo again, after upgrading it (the first time, before these tasks: mise-intl init)"
+["intl:init"]
+description = "intl's files written into the repo again, after upgrading it (the first time, before these tasks: mise-intl init)"
 usage = 'flag "--locales <ids>" help="the languages, comma-separated, the source first: en,de"; flag "--catalogs <dir>" help="the catalogs folder, locales"; flag "--gsxui <dir>" help="in a gsx app: where gsxui add puts its components"'
 run = 'mise-intl init{% if usage.locales %} --locales "{{usage.locales}}"{% endif %}{% if usage.catalogs %} --catalogs "{{usage.catalogs}}"{% endif %}{% if usage.gsxui %} --gsxui "{{usage.gsxui}}"{% endif %}'
 
-["intl:04-check"]
-description = "04. Every problem, for CI: syntax, arguments, plural forms, missing and stale translations, unused messages, intl's files current (only the languages named, when there are any)"
+["intl:check"]
+description = "Every problem, for CI: syntax, arguments, plural forms, missing and stale translations, unused messages, intl's files current (only the languages named, when there are any)"
 usage = 'flag "--missing <how>" help="fail, or warn: missing and stale translations only reported (default: INTL_MISSING, else warn on a GitHub pull request, else fail)"; arg "[locales]..." help="only these languages: de fr"'
 run = 'mise-intl check{% if usage.missing %} --missing "{{usage.missing}}"{% endif %}{% for a in usage.locales %} "{{a}}"{% endfor %}'
 
-["intl:05-show"]
-description = "05. What's done, and what to run next"
+["intl:show"]
+description = "What's done, and what to run next"
 usage = 'flag "--json" help="one JSON document on stdout, instead of text"'
 run = 'mise-intl show{% if usage.json %} --json{% endif %}'
 
-["intl:06-gen"]
-description = "06. The catalogs compiled into the app's messages package (locales/intl_gen.go), and intl.sum"
+["intl:gen"]
+description = "The catalogs compiled into the app's messages package (locales/intl_gen.go), and intl.sum"
 run = "mise-intl gen"
 
-["intl:07-status"]
-description = "07. Per language: translated, inherited, stale, missing (fails while one is incomplete)"
+["intl:status"]
+description = "Per language: translated, inherited, stale, missing (fails while one is incomplete)"
 run = "mise-intl status"
 
-["intl:08-add-locale"]
-description = "08. A language added: its id as Intl writes it, into intl.toml, and its catalog"
+["intl:add-locale"]
+description = "A language added: its id as Intl writes it, into intl.toml, and its catalog"
 usage = 'arg "<locales>..." help="the languages to add: fr pt-BR"'
 run = 'mise-intl add-locale{% for a in usage.locales %} "{{a}}"{% endfor %}'
 
-["intl:09-todo"]
-description = "09. What's left to translate, with what a translator needs (for people, or --json for agents)"
+["intl:todo"]
+description = "What's left to translate, with what a translator needs (for people, or --json for agents)"
 usage = 'flag "--json" help="one JSON document on stdout, for agents"; arg "[locales]..." help="only these languages"'
 run = 'mise-intl todo{% if usage.json %} --json{% endif %}{% for a in usage.locales %} "{{a}}"{% endfor %}'
 
-["intl:10-translate"]
-description = "10. Claude Code translates what's left, a worker per language, with the intl skill"
+["intl:translate"]
+description = "Claude Code translates what's left, a worker per language, with the intl skill"
 usage = 'arg "[locales]..." help="only these languages"'
 run = 'mise-intl translate{% for a in usage.locales %} "{{a}}"{% endfor %}'
 
-["intl:11-export"]
-description = "11. XLIFF 2.0 for translators: what's left (or everything), into xliff/out"
+["intl:export"]
+description = "XLIFF 2.0 for translators: what's left (or everything), into xliff/out"
 usage = 'flag "--all" help="every message, not only what is left"; flag "--out <dir>" help="the folder for <locale>.xlf, xliff/out"; arg "[locales]..." help="only these languages"'
 run = 'mise-intl export{% if usage.all %} --all{% endif %}{% if usage.out %} --out "{{usage.out}}"{% endif %}{% for a in usage.locales %} "{{a}}"{% endfor %}'
 
-["intl:12-import"]
-description = "12. Translators' XLIFF read back into the catalogs (every file in xliff/in, by default)"
+["intl:import"]
+description = "Translators' XLIFF read back into the catalogs (every file in xliff/in, by default)"
 usage = 'arg "[files]..." help="the .xlf files: xliff/in/fr.xlf"'
 run = 'mise-intl import{% for a in usage.files %} "{{a}}"{% endfor %}'
 
-["intl:13-confirm"]
-description = "13. Stale translations that are still right, kept: a language's, or one message's (every one of them, by default)"
+["intl:confirm"]
+description = "Stale translations that are still right, kept: a language's, or one message's (every one of them, by default)"
 usage = 'arg "[keys]..." help="de, or de:home.title"'
 run = 'mise-intl confirm{% for a in usage.keys %} "{{a}}"{% endfor %}'
 
-["intl:14-prune"]
-description = "14. The keys the source no longer has, removed from every catalog"
+["intl:prune"]
+description = "The keys the source no longer has, removed from every catalog"
 run = "mise-intl prune"
 
 ["intl:verify"]
@@ -87,7 +86,7 @@ run = 'mise-intl assets{% if usage.worker %} --worker "{{usage.worker}}"{% endif
 
 ["intl:daemon"]
 description = "Intl outside a Worker: workerd serving it on the files gen writes, in the foreground. pitchfork.toml's intl daemon runs it (pitchfork start intl; intl starts it when nothing answers)"
-depends = ["intl:06-gen"]
+depends = ["intl:gen"]
 run = "mise-intl daemon"
 
 ["intl:locales"]

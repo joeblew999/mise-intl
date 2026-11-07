@@ -36,8 +36,8 @@ runtime's Intl does it. A new or changed message is translated in the same chang
 ## Translating
 
 The app's languages are in `intl.toml` (the source locale first); each has a catalog, `<catalogs>/<locale>.toml`, in
-ICU MessageFormat. Run every command from the app's root. With mise, each is a numbered task too
-(`mise run intl:06-gen` runs `mise-intl gen`; `mise run intl:show-help` lists them), and the repo's
+ICU MessageFormat. Run every command from the app's root. With mise, each is a task too, named for it
+(`mise run intl:gen` runs `mise-intl gen`; `mise run intl:show-help` lists them), and the repo's
 `docs/intl/README.md` has everything else. In a gsx app, the components, the renderer and the filters are
 `github.com/joeblew999/mise-intl/gsxintl`.
 
@@ -95,24 +95,24 @@ how many messages you translated and confirmed.
 
 ## Every task
 
-Each runs the mise-intl command of its name (`mise run intl:06-gen` runs `mise-intl gen`). Start with `mise run intl`:
+Each runs the mise-intl command of its name (`mise run intl:gen` runs `mise-intl gen`). Start with `mise run intl`:
 it says what's done and what to run next.
 
 | Task | Run it | What it does |
 |---|---|---|
 | `mise run intl` | first, and whenever you're unsure | what's done for the app's languages, and what to run next |
-| `mise run intl:03-init` | after upgrading intl | intl's files written again: its tasks, the workflow, this skill, the docs, the hook |
-| `mise run intl:04-check` | after any change, before pushing | every problem: syntax, arguments, plural forms, missing and stale translations, unused keys |
-| `mise run intl:05-show` | to see where the app is | the same as `mise run intl` |
-| `mise run intl:06-gen` | after any change to a catalog | the catalogs compiled into the app's messages package, and `intl.sum` |
-| `mise run intl:07-status` | to see how far each language is | per language: translated, inherited, stale, missing |
-| `mise run intl:08-add-locale` | to add a language | its id as Intl writes it, into `intl.toml`, and its catalog |
-| `mise run intl:09-todo` | before translating | what's left to translate, with what a translator needs |
-| `mise run intl:10-translate` | when the person asks for every language translated | a Claude Code worker per language, each with this skill |
-| `mise run intl:11-export` | for human translators | XLIFF 2.0 per language into `xliff/out` |
-| `mise run intl:12-import` | when their files are back | their XLIFF, from `xliff/in`, read into the catalogs |
-| `mise run intl:13-confirm` | for a stale translation that is still right | kept as it is: a language's, or one message's |
-| `mise run intl:14-prune` | when check names a key the source no longer has | the key removed from every catalog |
+| `mise run intl:init` | after upgrading intl | intl's files written again: its tasks, the workflow, this skill, the docs, the hook |
+| `mise run intl:check` | after any change, before pushing | every problem: syntax, arguments, plural forms, missing and stale translations, unused keys |
+| `mise run intl:show` | to see where the app is | the same as `mise run intl` |
+| `mise run intl:gen` | after any change to a catalog | the catalogs compiled into the app's messages package, and `intl.sum` |
+| `mise run intl:status` | to see how far each language is | per language: translated, inherited, stale, missing |
+| `mise run intl:add-locale` | to add a language | its id as Intl writes it, into `intl.toml`, and its catalog |
+| `mise run intl:todo` | before translating | what's left to translate, with what a translator needs |
+| `mise run intl:translate` | when the person asks for every language translated | a Claude Code worker per language, each with this skill |
+| `mise run intl:export` | for human translators | XLIFF 2.0 per language into `xliff/out` |
+| `mise run intl:import` | when their files are back | their XLIFF, from `xliff/in`, read into the catalogs |
+| `mise run intl:confirm` | for a stale translation that is still right | kept as it is: a language's, or one message's |
+| `mise run intl:prune` | when check names a key the source no longer has | the key removed from every catalog |
 | `mise run intl:verify` | before every push | what `.github/workflows/intl.yml` runs on GitHub: the repo's `setup` and `test`, then check |
 | `mise run intl:template` | only in a repo with no app yet | the template's little app; it never writes over a file |
 | `mise run intl:add` | for a language list, the language offer, or preferences | intl's screens copied into a gsx app, their text translated |

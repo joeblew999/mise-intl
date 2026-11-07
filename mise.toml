@@ -1,11 +1,11 @@
 # mise-intl's own tasks, for working on it. Run every task here, at the top: everything is driven from this file, as
-# mise-cloudflare's root is. The steps a person takes are a repo's own numbered tasks (intl:03-init to 14-prune, in its
+# mise-cloudflare's root is. The steps a person takes are a repo's own tasks (intl:init to intl:prune, in its
 # .mise/tasks). The walks (TestWalkTemplate, TestWalkNewRepo, e2e_walk_test.go) runs them in order, on the template or on a new repo made from it.
 # This file is only what the root does itself, each task named for what it acts on (noun:verb):
 #   template: the template, templates/, a whole repo that runs where it is
 #     mise run template:setup        its own setup task: workerd from its package.json, in templates/node_modules
 #     mise run template:gen          its messages package, which the module's own build and tests need (gen there)
-#     mise run template:e2e          TestWalkTemplate on it: its numbered tasks in their order, through its own mise file, each checked
+#     mise run template:e2e          TestWalkTemplate on it: its tasks in a person's order, through its own mise file, each checked
 #     mise run template:check-mise   misecheck on its tasks file against mise-intl's Go, and against the walk
 #     mise run template:worker       TestWorker: its app on a Cloudflare Worker, in local workerd, on the Worker's own Intl
 #   new-repo: a new repo, made as a person makes one (mise-intl init, then intl:template), by the walk and gone after it
@@ -54,7 +54,7 @@ dir = "{{config_root}}/templates"
 run = "go run ../cmd/mise-intl gen"
 
 [tasks."template:e2e"]
-description = "TestWalkTemplate: the template, templates/, where it is: its numbered tasks (intl:03-init to 14-prune) in their order, through its own mise file, each checked by what a person would see it do (walk_test.go); the ones that change the catalogs run on a new repo. After tool:install"
+description = "TestWalkTemplate: the template, templates/, where it is: its tasks (intl:init to intl:prune) in a person's order, through its own mise file, each checked by what a person would see it do (walk_test.go); the ones that change the catalogs run on a new repo. After tool:install"
 depends = ["template:gen", "tool:install"]
 run = 'go test . -run "^TestWalkTemplate$" -count=1 -v -timeout 15m'
 
@@ -68,7 +68,7 @@ depends = ["template:gen"]
 run = 'go test . -run "^TestWorker$" -count=1 -v -timeout 10m'
 
 [tasks."new-repo:e2e"]
-description = "TestWalkNewRepo: a new repo, made as a person makes one (an empty folder with its own git, mise-intl init, then its own intl:template: the template's app, its go.mod named for the folder), in a folder of its own that goes when the walk ends; every numbered task, the ones that change the catalogs too. It pins this checkout's build (local, its go.mod using this checkout's packages), or a release with --version, as the release tries it. After tool:install"
+description = "TestWalkNewRepo: a new repo, made as a person makes one (an empty folder with its own git, mise-intl init, then its own intl:template: the template's app, its go.mod named for the folder), in a folder of its own that goes when the walk ends; every task in a person's order, the ones that change the catalogs too. It pins this checkout's build (local, its go.mod using this checkout's packages), or a release with --version, as the release tries it. After tool:install"
 usage = 'flag "--version <version>" help="pin this release of mise-intl from GitHub, as mise use does, instead of the build of this checkout"'
 depends = ["template:gen", "tool:install"]
 run = 'go test . -run "^TestWalkNewRepo$" -count=1 -v -timeout 15m{% if usage.version %} -args -version "{{usage.version}}"{% endif %}'
