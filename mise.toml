@@ -41,9 +41,9 @@ goreleaser = "2.20.0"   # the release's binaries (.goreleaser.yaml)
 INTL_PITCHFORK_DIR = "{{config_root}}/templates"
 
 [tasks."template:setup"]
-description = "The template's own setup, by its own task (mise run setup, in templates/; its Go is this module's, go.mod's toolchain line): workerd from its package.json in templates/node_modules (aube install), the one intl's Intl runs on in this repo's tests and the walk. The machine's .mise/config.local.toml ignored, and the template's pin of mise-intl, which its setup doesn't run (so it works before mise-intl's first release)"
+description = "The template's own setup, by its own task (mise run setup, in templates/; its Go is this module's, go.mod's toolchain line): workerd from its package.json in templates/node_modules (aube install), the one intl's Intl runs on in this repo's tests and the walk. The machine's .mise/config.local.toml ignored: the template's pin of mise-intl, latest, its newest release the minute it's out"
 dir = "{{config_root}}/templates"
-env = { MISE_IGNORED_CONFIG_PATHS = "{{config_root}}/templates/.mise/config.local.toml", MISE_DISABLE_TOOLS = "github:joeblew999/mise-intl" }
+env = { MISE_IGNORED_CONFIG_PATHS = "{{config_root}}/templates/.mise/config.local.toml" }
 run = "mise run setup"
 
 [tasks."template:gen"]
