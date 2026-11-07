@@ -5,6 +5,12 @@
 # go.mod's.
 
 [settings]
+# The tools this repo takes the minute a release is out, never held back a day as every other tool's are
+# (minimum_release_age): mise matches no owner by a pattern, so each tool's init adds its own name, mise-intl's its.
+minimum_release_age_excludes = ["github:joeblew999/mise-intl"]
+# A latest from GitHub's own list of releases, not mise's versions host, which lists a release some time after it's
+# out: latest is the newest the minute it's there (an exact pin lists none). mise-intl init adds this too.
+use_versions_host = false
 # go.mod's toolchain line, or its go line, is the Go pin; this makes mise install honour it.
 idiomatic_version_file_enable_tools = ["go"]
 

@@ -9,52 +9,31 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/joeblew999/mise-check/miseconfig"
 	"github.com/joeblew999/mise-intl/internal/setup"
 	"github.com/joeblew999/mise-intl/intl/config"
 	"github.com/joeblew999/mise-intl/templates"
 )
 
 // theirs are the template's files a repo may have of its own already: init writes them only when it has none.
-// .mise/config.toml is mise-intl's pin, as mise-cloudflare's is: written once, then the repo's (a newer release's init,
-// run by hand, moves it forward).
+// .mise/config.toml is mise-intl's pin, as mise-cloudflare's is: written once, then the repo's, whose mise-intl parts
+// init keeps (tool).
 var theirs = map[string]bool{".gitignore": true, ".claude/settings.json": true, ".mise/config.toml": true}
 
 // self is mise-intl as a repo's mise pins it, from its GitHub releases (.mise/config.toml, which init writes).
 const self = "github:joeblew999/mise-intl"
 
-// pinLine is mise-intl's pin in .mise/config.toml.
-var pinLine = regexp.MustCompile(regexp.QuoteMeta(`"`+self+`" = "`) + `[^"]*"`)
-
-// pinned is the template's .mise/config.toml pinning this build: a release pins itself, a build of a checkout local
-// (mise run tool:install there links it), so a repo runs exactly what set it up.
-func pinned(b []byte) []byte {
-	pin := "local"
-	if version != "" {
-		pin = strings.TrimPrefix(version, "v")
-	}
-	if !pinLine.Match(b) {
-		fail(fmt.Errorf("the template's .mise/config.toml doesn't pin %s", self))
-	}
-	return pinLine.ReplaceAll(b, []byte(`"`+self+`" = "`+pin+`"`))
-}
-
-// movePin moves the repo's pin of mise-intl in its .mise/config.toml (b) forward to this release, when it pins an older
-// one: init at a newer release, run by hand, is the move to it. The rest of the file stays as it is; a pin of local, or
-// of this release or a newer one, stays too, as does every pin when this is a checkout's build.
-func movePin(path string, b []byte) bool {
-	m := pinLine.Find(b)
-	at := strings.TrimSuffix(strings.TrimPrefix(string(m), `"`+self+`" = "`), `"`)
-	if version == "" || m == nil || at == "local" || !olderVersion(at, buildVersion()) {
-		return false
-	}
-	must(os.WriteFile(path, pinLine.ReplaceAll(b, []byte(`"`+self+`" = "`+buildVersion()+`"`)), 0o644))
-	fmt.Printf("wrote %s: mise-intl %s → %s\n", path, at, buildVersion())
-	return true
+// tool is mise-intl's parts of a repo's .mise/config.toml, as this build writes them (mise-check's miseconfig): its
+// pin, this release (local for a checkout's build) or a newer one, and its own name in minimum_release_age_excludes
+// with use_versions_host = false, so latest is its newest release the minute it's out. The rest is the repo's.
+func tool() miseconfig.Tool {
+	tmpl, err := fs.ReadFile(templates.Tool, ".mise/config.toml")
+	must(err)
+	return miseconfig.Tool{Name: self, Release: strings.TrimPrefix(version, "v"), Template: tmpl, Init: "mise run intl:03-init"}
 }
 
 // initRepo is mise-intl init (03): the repo set up for intl, as mise-cloudflare's init sets a repo up. First the
@@ -129,8 +108,12 @@ func writeTool(root string) {
 		}
 		to := filepath.Join(root, filepath.FromSlash(p))
 		if b, err := os.ReadFile(to); err == nil && theirs[p] {
-			if p == ".mise/config.toml" && movePin(to, b) {
-				return nil
+			if p == ".mise/config.toml" {
+				if out, wrote := tool().Keep(b); len(wrote) > 0 {
+					must(os.WriteFile(to, out, 0o644))
+					fmt.Printf("wrote %s: %s\n", p, strings.Join(wrote, "; "))
+					return nil
+				}
 			}
 			fmt.Printf("✓ %s is the repo's own: left as it is\n", p)
 			return nil
@@ -140,7 +123,8 @@ func writeTool(root string) {
 			return err
 		}
 		if p == ".mise/config.toml" {
-			b = pinned(b)
+			b, err = tool().Pinned()
+			must(err)
 		}
 		if _, err := writeChanged(root, to, b); err != nil {
 			return err
@@ -152,8 +136,8 @@ func writeTool(root string) {
 	}))
 }
 
-// stale names the files init wrote that this version would write differently, and a .claude/settings.json of the
-// repo's own that doesn't run the hook.
+// stale names the files init wrote that this version would write differently, mise-intl's parts of the repo's own
+// .mise/config.toml it lacks, and a .claude/settings.json of the repo's own that doesn't run the hook.
 func stale(root string) []string {
 	var out []string
 	fs.WalkDir(templates.Tool, ".", func(p string, d fs.DirEntry, err error) error {
@@ -172,6 +156,9 @@ func stale(root string) []string {
 		}
 		return nil
 	})
+	if b, err := os.ReadFile(filepath.Join(root, ".mise", "config.toml")); err == nil {
+		out = append(out, tool().Problems(b)...)
+	}
 	if b, err := os.ReadFile(filepath.Join(root, ".claude", "settings.json")); err == nil && !bytes.Contains(b, []byte(templates.HookFile)) {
 		out = append(out, ".claude/settings.json doesn't run .claude/hooks/"+templates.HookFile+": add its SessionStart entry (docs/intl/README.md)")
 	}

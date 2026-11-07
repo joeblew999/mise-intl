@@ -133,7 +133,9 @@ on each machine ([mise's getting started](https://mise.jdx.dev/getting-started.h
    `init` writes:
    - intl's tasks, `.mise/tasks/mise-intl.toml`, where mise finds them with no configuration
      ([Task discovery](https://mise.jdx.dev/tasks/task-discovery.html)), and `.mise/config.toml`, pinning mise-intl at
-     the release that ran `init`, with the Go `go.mod` names;
+     the release that ran `init`, with the Go `go.mod` names, and the settings that make `latest` mise-intl's newest
+     release the minute it's out (`minimum_release_age_excludes`, `use_versions_host = false`; a repo's own file gets
+     them added);
    - in a Go module, intl's packages required in `go.mod` at the same release;
    - the `intl` skill into `.claude/skills`, and Claude Code's hook for cloud sessions;
    - these docs, `docs/intl/README.md`, and the GitHub workflow, `.github/workflows/intl.yml`;

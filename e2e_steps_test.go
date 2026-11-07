@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"bytes"
 	"cmp"
 	"os"
 	"path/filepath"
@@ -19,11 +20,22 @@ import (
 var steps = []walk.Step[*walker]{
 	{Task: "intl:03-init", Check: func(w *walker) {
 		before := w.Snapshot(local...)
+		if !w.inPlace { // a repo's own .mise/config.toml, as an older init wrote it: init adds what makes latest the newest
+			config := filepath.Join(w.Dir, ".mise", "config.toml")
+			b, _ := os.ReadFile(config)
+			older := regexp.MustCompile(`(?m)^(#[^\n]*\n)*(minimum_release_age_excludes|use_versions_host) = [^\n]*\n`).ReplaceAll(b, nil)
+			if err := os.WriteFile(config, older, 0o644); err != nil || bytes.Equal(older, b) {
+				w.T.Fatalf("the new repo's .mise/config.toml has no minimum_release_age_excludes or use_versions_host to take out (%v)", err)
+			}
+		}
 		w.MustTask("intl:03-init")
 		if changed := walk.Diff(before, w.Snapshot(local...)); len(changed) > 0 {
 			w.T.Fatalf("intl:03-init changed %s: the repo isn't what init writes", strings.Join(changed, ", "))
 		}
 		w.Pass("intl:03-init changed nothing: the repo is what init writes")
+		if !w.inPlace {
+			w.Pass("intl:03-init gave the repo's own .mise/config.toml, as an older init wrote it, mise-intl in minimum_release_age_excludes and use_versions_host = false again")
+		}
 	}},
 	{Task: "intl:04-check", Check: func(w *walker) {
 		if out := w.MustTask("intl:04-check"); !regexp.MustCompile(`✓ \d+ messages in \d+ locales`).MatchString(out) {
