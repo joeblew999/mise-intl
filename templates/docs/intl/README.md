@@ -116,6 +116,10 @@ intl needs Go 1.26 or newer, the same as gsx. [mise](https://mise.jdx.dev) bring
 ordinary Go server run on.
 Translating with Claude also needs [Claude Code](https://code.claude.com) (`claude`) installed.
 
+At the repository's root (GitHub and Claude Code read `.github/` and `.claude/` only there), with mise installed once
+on each machine ([mise's getting started](https://mise.jdx.dev/getting-started.html): `curl https://mise.run | sh`, or
+`brew install mise`):
+
 1. Add intl to the repo and set it up:
 
    ```sh
@@ -133,6 +137,10 @@ Translating with Claude also needs [Claude Code](https://code.claude.com) (`clau
    - `intl.toml`, the source catalog and a catalog per language;
    - in a gsx app, intl's filters and renderers into `gsx.toml`;
    - the generated files into `.gitignore`.
+
+   `@latest` is the newest release once it's a day old (mise's minimum release age); name one instead (`@0.2.0`:
+   they're all on [its releases](https://github.com/joeblew999/mise-intl/releases)). `intl:template` never writes
+   over a file. Commit what both wrote; `mise run serve` serves the template's app at http://localhost:8080, `/de/` in German.
 
    It picks up gsxui from `gsxui.json`, and then compiles the catalogs. Running it again leaves what is the repo's
    alone. To upgrade intl, run it again at the newer release (`mise exec github:joeblew999/mise-intl@latest --

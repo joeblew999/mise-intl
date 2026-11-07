@@ -17,6 +17,8 @@
 #   root: this file
 #     mise run root:check-mise       misecheck on this very file
 # Each runs what it needs first: run the furthest you need.
+#
+# This repo's pins are mise-check's, by its own tasks in .mise/, which mise-check init wrote: mise run mise-check.
 
 [settings]
 # go.mod's toolchain line is the Go pin; this makes mise install honour it.
@@ -28,9 +30,9 @@ skills.fetch = false
 # The template's: its setup task installs workerd from its package.json with them, as mise-cloudflare's template gets
 # wrangler (template:setup)
 node = "26.13.0"
-aube = { version = "2.8.4", workflow = ["release-plz.yml@refs/heads/main", "release.yml@refs/heads/main"] }
-usage = { version = "7.1.3", workflow = "publish-cli.yml" }    # --help and tab-completion for the tasks' flags
-goreleaser = "2.19.0"   # the release's binaries (.goreleaser.yaml)
+aube = { version = "2.9.0", workflow = ["release-plz.yml@refs/heads/main", "release.yml@refs/heads/main"] }
+usage = { version = "7.2.0", workflow = "publish-cli.yml" }    # --help and tab-completion for the tasks' flags
+goreleaser = "2.20.0"   # the release's binaries (.goreleaser.yaml)
 
 [env]
 # intl's Intl outside a Worker, for this repo's go test: the template's workerd (intl/workerd finds its native binary
