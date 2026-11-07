@@ -31,7 +31,7 @@ skills.fetch = false
 # wrangler (template:setup)
 node = "26.13.0"
 aube = { version = "2.9.0", workflow = ["release-plz.yml@refs/heads/main", "release.yml@refs/heads/main"] }
-usage = { version = "7.2.0", workflow = "publish-cli.yml" }    # --help and tab-completion for the tasks' flags
+usage = { version = "7.3.0", workflow = "publish-cli.yml" }    # --help and tab-completion for the tasks' flags
 pitchfork = "2.33.1"   # runs the template's intl daemon (templates/pitchfork.toml), this repo's tests' Intl
 goreleaser = "2.20.0"   # the release's binaries (.goreleaser.yaml)
 
