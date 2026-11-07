@@ -7,5 +7,5 @@ node_modules/
 # mise run tool:build, and goreleaser (tool:release --dry-run)
 bin/
 dist/
-# mise's override for one machine (mise-check's files name it): a checkout's build pinned there (local), never committed
+# mise's override for one machine: mise-check's own checkout pins its build there (local)
 .mise/config.local.toml
